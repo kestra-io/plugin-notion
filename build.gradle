@@ -175,8 +175,8 @@ jar {
 maven.pom {
     developers {
         developer {
-            id = "tchiotludo"
-            name = "Ludovic Dehon"
+            id = "ben8t"
+            name = "Benoit Pimpaud"
         }
     }
 }
