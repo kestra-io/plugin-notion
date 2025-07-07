@@ -156,11 +156,7 @@ public abstract class AbstractNotionTask extends NotionConnection implements Run
      * Validates that the pageId property is provided and not empty
      */
     protected String validateAndRenderPageId(RunContext runContext) throws Exception {
-        String renderedPageId = runContext.render(this.pageId).as(String.class).orElse("");
-        
-        if (renderedPageId.isEmpty()) {
-            throw new IllegalArgumentException("pageId is required and cannot be empty");
-        }
+        String renderedPageId = runContext.render(this.pageId).as(String.class).orElseThrow();
         
         // Basic validation for Notion page ID format (UUID format)
         if (!renderedPageId.matches("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$") && 
