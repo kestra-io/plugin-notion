@@ -102,30 +102,30 @@ public class ArchivePage extends AbstractNotionTask {
             // Archive the page by setting archived = true
             Map<String, Object> requestBody = Map.of("archived", true);
             
-            HttpRequest.HttpRequestBuilder deleteRequestBuilder = buildPatchRequest(runContext, pageUrl, requestBody);
+            HttpRequest.HttpRequestBuilder archiveRequestBuilder = buildPatchRequest(runContext, pageUrl, requestBody);
             
             logger.debug("Archiving page with request body: {}", mapper.writeValueAsString(requestBody));
             
-            NotionResponse deleteResponse = makeCall(runContext, deleteRequestBuilder, NotionResponse.class);
+            NotionResponse archiveResponse = makeCall(runContext, archiveRequestBuilder, NotionResponse.class);
             
-            // Store detailed information about the deletion
+            // Store detailed information about the archiving operation
             URI fileURI = store(runContext, List.of(Map.of(
                 "originalPageResponse", pageInfoResponse,
-                "deleteResponse", deleteResponse,
+                "archiveResponse", archiveResponse,
                 "pageId", renderedPageId,
-                "deletedTitle", pageTitle,
-                "deletedUrl", pageUrlValue
+                "archivedTitle", pageTitle,
+                "archivedUrl", pageUrlValue
             )));
             
             logger.info("Successfully archived page '{}' (ID: {})", pageTitle, renderedPageId);
             
-            return ((Output.OutputBuilder) buildCommonOutput(deleteResponse))
+            return ((Output.OutputBuilder) buildCommonOutput(archiveResponse))
                 .uri(fileURI)
                 .message("Page archived successfully")
                 .build();
                 
         } catch (Exception e) {
-            logger.error("Error deleting Notion page: {}", e.getMessage());
+            logger.error("Error archiving Notion page: {}", e.getMessage());
             throw e;
         }
     }

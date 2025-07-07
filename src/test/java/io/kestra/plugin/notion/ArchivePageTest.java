@@ -9,23 +9,23 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for DeletePage functionality.
+ * Unit tests for ArchivePage functionality.
  * These tests focus on input validation, builder patterns, and inheritance structure
  * without requiring actual API calls.
  */
-class DeletePageTest {
+class ArchivePageTest {
 
-    private DeletePage deletePage;
+    private ArchivePage archivePage;
 
     @BeforeEach
     void setUp() {
-        deletePage = DeletePage.builder().build();
+        archivePage = ArchivePage.builder().build();
     }
 
     @Test
     void testBuilderPattern() {
         // Test that the builder pattern works correctly
-        DeletePage task = DeletePage.builder()
+        ArchivePage task = ArchivePage.builder()
             .apiToken(Property.of("test-token"))
             .pageId(Property.of("12345678-1234-1234-1234-123456789abc"))
             .build();
@@ -38,7 +38,7 @@ class DeletePageTest {
     @Test
     void testBuilderWithMinimalFields() {
         // Test that builder works with just required fields
-        DeletePage task = DeletePage.builder()
+        ArchivePage task = ArchivePage.builder()
             .pageId(Property.of("12345678-1234-1234-1234-123456789abc"))
             .build();
         
@@ -49,27 +49,27 @@ class DeletePageTest {
     @Test
     void testGetEndpoint() {
         // Test that the endpoint is correctly set
-        assertThat(deletePage.getEndpoint(), equalTo("/v1/pages"));
+        assertThat(archivePage.getEndpoint(), equalTo("/v1/pages"));
     }
 
     @Test
     void testInheritanceFromAbstractNotionTask() {
-        // Test that DeletePage properly inherits from AbstractNotionTask
-        assertThat(deletePage, instanceOf(AbstractNotionTask.class));
-        assertThat(deletePage, instanceOf(NotionConnection.class));
+        // Test that ArchivePage properly inherits from AbstractNotionTask
+        assertThat(archivePage, instanceOf(AbstractNotionTask.class));
+        assertThat(archivePage, instanceOf(NotionConnection.class));
         
         // Test inherited URL building methods work
-        assertThat(deletePage.buildPageURL("test-id"), containsString("/v1/pages/test-id"));
-        assertThat(deletePage.buildPageChildrenURL("test-id"), containsString("/v1/blocks/test-id/children"));
+        assertThat(archivePage.buildPageURL("test-id"), containsString("/v1/pages/test-id"));
+        assertThat(archivePage.buildPageChildrenURL("test-id"), containsString("/v1/blocks/test-id/children"));
     }
 
     @Test
     void testTaskInheritanceStructure() {
-        // Test that DeletePage implements RunnableTask correctly
-        assertThat(deletePage, instanceOf(io.kestra.core.models.tasks.RunnableTask.class));
+        // Test that ArchivePage implements RunnableTask correctly
+        assertThat(archivePage, instanceOf(io.kestra.core.models.tasks.RunnableTask.class));
         
         // Test return type is AbstractNotionTask.Output
-        DeletePage task = DeletePage.builder()
+        ArchivePage task = ArchivePage.builder()
             .pageId(Property.of("test-id"))
             .build();
         assertThat(task, notNullValue());
@@ -78,7 +78,7 @@ class DeletePageTest {
     @Test
     void testPageIdProperty() {
         // Test that pageId property is correctly inherited from AbstractNotionTask
-        DeletePage task = DeletePage.builder()
+        ArchivePage task = ArchivePage.builder()
             .pageId(Property.of("test-page-id-123"))
             .build();
         
@@ -87,32 +87,32 @@ class DeletePageTest {
 
     @Test
     void testInheritedOutputStructure() {
-        // Test that DeletePage uses AbstractNotionTask.Output
-        DeletePage task = DeletePage.builder()
+        // Test that ArchivePage uses AbstractNotionTask.Output
+        ArchivePage task = ArchivePage.builder()
             .pageId(Property.of("test-id"))
             .build();
         
-        // DeletePage should inherit the common output structure
+        // ArchivePage should inherit the common output structure
         assertThat(task, instanceOf(AbstractNotionTask.class));
     }
 
     @Test
     void testInheritedHelperMethods() {
-        // Test that DeletePage inherits helper methods from AbstractNotionTask
-        assertThat(deletePage, instanceOf(AbstractNotionTask.class));
+        // Test that ArchivePage inherits helper methods from AbstractNotionTask
+        assertThat(archivePage, instanceOf(AbstractNotionTask.class));
         
         // Test inherited URL building capabilities
-        String pageUrl = deletePage.buildPageURL("test-page-id");
+        String pageUrl = archivePage.buildPageURL("test-page-id");
         assertThat(pageUrl, equalTo("https://api.notion.com/v1/pages/test-page-id"));
         
-        String childrenUrl = deletePage.buildPageChildrenURL("test-page-id");
+        String childrenUrl = archivePage.buildPageChildrenURL("test-page-id");
         assertThat(childrenUrl, equalTo("https://api.notion.com/v1/blocks/test-page-id/children"));
     }
 
     @Test
-    void testDeletePageSpecificConfiguration() {
-        // Test DeletePage-specific configuration
-        DeletePage task = DeletePage.builder()
+    void testArchivePageSpecificConfiguration() {
+        // Test ArchivePage-specific configuration
+        ArchivePage task = ArchivePage.builder()
             .apiToken(Property.of("secret-token"))
             .pageId(Property.of("12345678-1234-1234-1234-123456789abc"))
             .build();
@@ -126,20 +126,20 @@ class DeletePageTest {
     }
 
     @Test
-    void testDeletePageInputValidation() {
+    void testArchivePageInputValidation() {
         // Test basic input validation structure
-        DeletePage task = DeletePage.builder()
+        ArchivePage task = ArchivePage.builder()
             .pageId(Property.of("valid-page-id"))
             .build();
         
-        // DeletePage should require pageId (inherited from AbstractNotionTask)
+        // ArchivePage should require pageId (inherited from AbstractNotionTask)
         assertThat(task.getPageId(), notNullValue());
     }
 
     @Test
     void testPropertyAccess() {
         // Test that properties can be properly accessed
-        DeletePage task = DeletePage.builder()
+        ArchivePage task = ArchivePage.builder()
             .apiToken(Property.of("test-token"))
             .pageId(Property.of("test-page-id"))
             .build();
@@ -152,7 +152,7 @@ class DeletePageTest {
     @Test
     void testBuilderWithHttpOptions() {
         // Test builder with HTTP configuration options
-        DeletePage task = DeletePage.builder()
+        ArchivePage task = ArchivePage.builder()
             .pageId(Property.of("test-page-id"))
             .options(null) // HTTP configuration would go here
             .build();
@@ -162,24 +162,24 @@ class DeletePageTest {
     }
 
     @Test
-    void testDeletePageArchivingConcept() {
-        // Test that DeletePage understands the archiving concept
+    void testArchivePageArchivingConcept() {
+        // Test that ArchivePage understands the archiving concept
         // (In Notion, pages are archived rather than permanently deleted)
-        DeletePage task = DeletePage.builder()
+        ArchivePage task = ArchivePage.builder()
             .pageId(Property.of("page-to-archive"))
             .build();
         
         assertThat(task, notNullValue());
         assertThat(task.getPageId(), notNullValue());
         
-        // DeletePage should work with the same endpoints as other page operations
+        // ArchivePage should work with the same endpoints as other page operations
         assertThat(task.getEndpoint(), equalTo("/v1/pages"));
     }
 
     @Test
-    void testDeletePageSafetyAspects() {
-        // Test that DeletePage is properly configured for safe operations
-        DeletePage task = DeletePage.builder()
+    void testArchivePageSafetyAspects() {
+        // Test that ArchivePage is properly configured for safe operations
+        ArchivePage task = ArchivePage.builder()
             .apiToken(Property.of("test-token"))
             .pageId(Property.of("important-page-id"))
             .build();
@@ -197,15 +197,15 @@ class DeletePageTest {
 
     @Test
     void testMultiplePageIdFormats() {
-        // Test that DeletePage can handle different page ID formats
+        // Test that ArchivePage can handle different page ID formats
         String uuidFormat = "12345678-1234-1234-1234-123456789abc";
         String compactFormat = "123456789abcdef0123456789abcdef0";
         
-        DeletePage task1 = DeletePage.builder()
+        ArchivePage task1 = ArchivePage.builder()
             .pageId(Property.of(uuidFormat))
             .build();
         
-        DeletePage task2 = DeletePage.builder()
+        ArchivePage task2 = ArchivePage.builder()
             .pageId(Property.of(compactFormat))
             .build();
         
@@ -215,8 +215,8 @@ class DeletePageTest {
 
     @Test
     void testTaskStructureConsistency() {
-        // Test that DeletePage maintains consistent structure with other CRUD operations
-        DeletePage task = DeletePage.builder()
+        // Test that ArchivePage maintains consistent structure with other CRUD operations
+        ArchivePage task = ArchivePage.builder()
             .apiToken(Property.of("consistency-test-token"))
             .pageId(Property.of("consistency-test-page-id"))
             .build();

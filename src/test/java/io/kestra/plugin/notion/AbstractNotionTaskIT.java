@@ -122,9 +122,9 @@ public abstract class AbstractNotionTaskIT {
     }
 
     /**
-     * Creates a mock successful page delete response
+     * Creates a mock successful page archive response
      */
-    protected void mockDeletePageSuccess(String pageId) {
+    protected void mockArchivePageSuccess(String pageId) {
         String responseBody = createPageResponseJson(pageId, "Archived Page", true);
         
         wireMockServer.stubFor(patch(urlEqualTo("/v1/pages/" + pageId))
