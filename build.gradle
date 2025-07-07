@@ -52,8 +52,6 @@ dependencies {
     compileOnly group: "io.kestra", name: "core", version: kestraVersion
     compileOnly group: "io.kestra", name: "script", version: kestraVersion
 
-    // JSON processing (Jackson is included with Kestra platform but ensuring availability)
-    // HTTP client and related utilities are provided by Kestra core
 }
 
 
