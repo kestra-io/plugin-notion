@@ -109,6 +109,14 @@ public class UpdatePage extends AbstractNotionTask {
             
             String renderedContent = runContext.render(this.content).as(String.class).orElse("");
             
+            // Validate that at least one field is provided for update
+            boolean hasTitle = renderedTitle != null && !renderedTitle.trim().isEmpty();
+            boolean hasContent = renderedContent != null && !renderedContent.trim().isEmpty();
+            
+            if (!hasTitle && !hasContent) {
+                throw new IllegalArgumentException("At least one of 'title' or 'content' must be provided for update operation");
+            }
+            
             logger.info("Updating Notion page with ID: {}", renderedPageId);
             
             // Step 1: Update page properties (title) if provided
