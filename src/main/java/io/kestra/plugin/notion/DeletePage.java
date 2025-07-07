@@ -126,7 +126,7 @@ public class DeletePage extends AbstractNotionTask {
                 
         } catch (Exception e) {
             logger.error("Error deleting Notion page: {}", e.getMessage());
-            return buildErrorOutput("Failed to delete page: " + e.getMessage());
+            throw e;
         }
     }
 

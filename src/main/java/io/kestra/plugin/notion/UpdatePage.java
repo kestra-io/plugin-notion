@@ -152,7 +152,7 @@ public class UpdatePage extends AbstractNotionTask {
                 
         } catch (Exception e) {
             logger.error("Error updating Notion page: {}", e.getMessage());
-            return buildErrorOutput("Failed to update page: " + e.getMessage());
+            throw e;
         }
     }
 

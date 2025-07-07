@@ -105,7 +105,7 @@ public class ReadPage extends AbstractNotionTask {
                 
         } catch (Exception e) {
             logger.error("Error reading Notion page: {}", e.getMessage());
-            return buildErrorOutput("Failed to read page: " + e.getMessage());
+            throw e;
         }
     }
 

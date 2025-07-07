@@ -150,15 +150,7 @@ public abstract class AbstractNotionTask extends NotionConnection implements Run
             .success(true);
     }
 
-    /**
-     * Helper method to build error output
-     */
-    protected Output buildErrorOutput(String message) {
-        return Output.builder()
-            .success(false)
-            .message(message)
-            .build();
-    }
+
 
     /**
      * Validates that the pageId property is provided and not empty
