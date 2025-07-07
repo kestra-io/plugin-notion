@@ -14,7 +14,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
-import org.slf4j.Logger;
 
 import java.net.URI;
 import java.time.Instant;
@@ -103,7 +102,7 @@ public class CreatePage extends NotionConnection implements RunnableTask<CreateP
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        Logger logger = runContext.logger();
+        var logger = runContext.logger();
 
         // Render and validate inputs
         String renderedTitle = runContext.render(this.title).as(String.class).orElseThrow(

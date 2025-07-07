@@ -18,8 +18,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
-import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
 import reactor.core.publisher.Flux;
 
 import java.io.BufferedWriter;
@@ -30,7 +28,6 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
-@Slf4j
 @SuperBuilder
 @ToString
 @EqualsAndHashCode
@@ -73,7 +70,7 @@ public abstract class NotionConnection extends Task {
      * Makes an HTTP call to the Notion API with proper error handling
      */
     public <T> T makeCall(RunContext runContext, HttpRequest.HttpRequestBuilder requestBuilder, Class<T> responseType) throws Exception {
-        Logger logger = runContext.logger();
+        var logger = runContext.logger();
 
         try (HttpClient client = new HttpClient(runContext, options)) {
             HttpRequest request = requestBuilder.build();

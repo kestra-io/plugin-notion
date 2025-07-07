@@ -12,7 +12,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
-import org.slf4j.Logger;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
 import java.net.URI;
@@ -96,7 +95,7 @@ public class UpdatePage extends AbstractNotionTask {
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        Logger logger = runContext.logger();
+        var logger = runContext.logger();
 
         try {
             // Validate and render page ID
