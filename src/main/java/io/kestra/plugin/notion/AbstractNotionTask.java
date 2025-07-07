@@ -10,6 +10,7 @@ import lombok.experimental.SuperBuilder;
 
 import java.net.URI;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 
 @SuperBuilder
@@ -116,8 +117,8 @@ public abstract class AbstractNotionTask extends NotionConnection implements Run
             titleProp = (Map<String, Object>) properties.get("Name");
         }
         
-        if (titleProp != null && titleProp.get("title") instanceof java.util.List) {
-            java.util.List<?> titleArray = (java.util.List<?>) titleProp.get("title");
+        if (titleProp != null && titleProp.get("title") instanceof List) {
+            List<?> titleArray = (List<?>) titleProp.get("title");
             if (!titleArray.isEmpty() && titleArray.get(0) instanceof Map) {
                 Map<String, Object> firstTitle = (Map<String, Object>) titleArray.get(0);
                 Object plainText = firstTitle.get("plain_text");
