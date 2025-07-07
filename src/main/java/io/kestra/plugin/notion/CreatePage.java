@@ -9,6 +9,7 @@ import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.notion.utils.MarkdownConverter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -153,7 +154,6 @@ public class CreatePage extends NotionConnection implements RunnableTask<CreateP
             .archived(response.getArchived())
             .properties(response.getProperties())
             .uri(fileURI)
-            .success(true)
             .message("Page created successfully")
             .build();
     }
@@ -204,7 +204,7 @@ public class CreatePage extends NotionConnection implements RunnableTask<CreateP
      * Output structure for CreatePage operation
      */
     @Getter
-    @lombok.Builder
+    @Builder
     public static class Output implements io.kestra.core.models.tasks.Output {
         
         @Schema(
@@ -260,12 +260,6 @@ public class CreatePage extends NotionConnection implements RunnableTask<CreateP
             description = "URI of the stored file containing detailed page information"
         )
         private URI uri;
-
-        @Schema(
-            title = "Success",
-            description = "Whether the operation was successful"
-        )
-        private Boolean success;
 
         @Schema(
             title = "Message",

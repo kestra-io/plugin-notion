@@ -78,7 +78,6 @@ class CreatePageTest {
             .url("https://notion.so/test-page")
             .title("Test Page")
             .content("Test content")
-            .success(true)
             .message("Page created successfully")
             .build();
         
@@ -87,7 +86,6 @@ class CreatePageTest {
         assertThat(output.getUrl(), equalTo("https://notion.so/test-page"));
         assertThat(output.getTitle(), equalTo("Test Page"));
         assertThat(output.getContent(), equalTo("Test content"));
-        assertThat(output.getSuccess(), equalTo(true));
         assertThat(output.getMessage(), equalTo("Page created successfully"));
     }
 
@@ -96,12 +94,10 @@ class CreatePageTest {
         // Test that Output builder handles null values gracefully
         CreatePage.Output output = CreatePage.Output.builder()
             .pageId("test-page-id")
-            .success(false)
             .build();
         
         assertThat(output, notNullValue());
         assertThat(output.getPageId(), equalTo("test-page-id"));
-        assertThat(output.getSuccess(), equalTo(false));
         assertThat(output.getUrl(), nullValue());
         assertThat(output.getTitle(), nullValue());
         assertThat(output.getContent(), nullValue());

@@ -142,7 +142,6 @@ class ReadPageIT extends AbstractNotionTaskIT {
             .url("https://notion.so/test-page")
             .title("Test Page")
             .content("Test content")
-            .success(true)
             .message("Page read successfully")
             .createdTime(now)
             .lastEditedTime(now)
@@ -154,7 +153,6 @@ class ReadPageIT extends AbstractNotionTaskIT {
         assertThat(output.getUrl(), equalTo("https://notion.so/test-page"));
         assertThat(output.getTitle(), equalTo("Test Page"));
         assertThat(output.getContent(), equalTo("Test content"));
-        assertThat(output.getSuccess(), equalTo(true));
         assertThat(output.getMessage(), equalTo("Page read successfully"));
         assertThat(output.getCreatedTime(), equalTo(now));
         assertThat(output.getLastEditedTime(), equalTo(now));

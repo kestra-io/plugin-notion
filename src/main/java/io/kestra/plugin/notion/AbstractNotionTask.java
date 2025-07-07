@@ -30,7 +30,7 @@ public abstract class AbstractNotionTask extends NotionConnection implements Run
     /**
      * Common output structure for all Notion page operations
      */
-    @Builder(toBuilder = true)
+    @Builder
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
@@ -91,12 +91,6 @@ public abstract class AbstractNotionTask extends NotionConnection implements Run
         private URI uri;
 
         @Schema(
-            title = "Success",
-            description = "Whether the operation was successful"
-        )
-        private Boolean success;
-
-        @Schema(
             title = "Message",
             description = "Operation result message"
         )
@@ -146,8 +140,7 @@ public abstract class AbstractNotionTask extends NotionConnection implements Run
             .createdTime(response.getCreatedTime())
             .lastEditedTime(response.getLastEditedTime())
             .archived(response.getArchived())
-            .properties(response.getProperties())
-            .success(true);
+            .properties(response.getProperties());
     }
 
 
