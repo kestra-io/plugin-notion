@@ -13,6 +13,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @SuperBuilder
 @ToString
@@ -147,17 +148,50 @@ public abstract class AbstractTask extends NotionConnection implements RunnableT
 
 
     /**
+     * Helper method to check if a string is a valid UUID
+     */
+    public static boolean isUUID(String s) {
+        try {
+            UUID.fromString(s);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Helper method to format a 32-character hex string as a UUID
+     */
+    private static String formatAsUUID(String hexString) {
+        if (hexString.length() != 32) {
+            return hexString;
+        }
+        return hexString.substring(0, 8) + "-" + 
+               hexString.substring(8, 12) + "-" + 
+               hexString.substring(12, 16) + "-" + 
+               hexString.substring(16, 20) + "-" + 
+               hexString.substring(20);
+    }
+
+    /**
      * Validates that the pageId property is provided and not empty
      */
     protected String validateAndRenderPageId(RunContext runContext) throws Exception {
         String renderedPageId = runContext.render(this.pageId).as(String.class).orElseThrow();
         
-        // Basic validation for Notion page ID format (UUID format)
-        if (!renderedPageId.matches("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$") && 
-            !renderedPageId.matches("^[0-9a-f]{32}$")) {
-            throw new IllegalArgumentException("pageId must be a valid Notion page ID (UUID format)");
+        // Check if it's already a valid UUID
+        if (isUUID(renderedPageId)) {
+            return renderedPageId;
         }
         
-        return renderedPageId;
+        // Check if it's a 32-character hex string that can be formatted as UUID
+        if (renderedPageId.matches("^[0-9a-f]{32}$")) {
+            String formattedUUID = formatAsUUID(renderedPageId);
+            if (isUUID(formattedUUID)) {
+                return formattedUUID;
+            }
+        }
+        
+        throw new IllegalArgumentException("pageId must be a valid Notion page ID (UUID format)");
     }
 } 
