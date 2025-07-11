@@ -115,8 +115,8 @@ public abstract class AbstractTask extends NotionConnection implements RunnableT
         
         if (titleProp != null && titleProp.get("title") instanceof List) {
             List<?> titleArray = (List<?>) titleProp.get("title");
-            if (!titleArray.isEmpty() && titleArray.get(0) instanceof Map) {
-                Map<String, Object> firstTitle = (Map<String, Object>) titleArray.get(0);
+            if (!titleArray.isEmpty() && titleArray.getFirst() instanceof Map) {
+                Map<String, Object> firstTitle = (Map<String, Object>) titleArray.getFirst();
                 Object plainText = firstTitle.get("plain_text");
                 if (plainText != null) {
                     return plainText.toString();
