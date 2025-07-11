@@ -110,7 +110,7 @@ public class CreatePage extends NotionConnection implements RunnableTask<CreateP
             () -> new IllegalArgumentException("title is required")
         );
 
-        String renderedContent = runContext.render(this.content).as(String.class).orElse("");
+        String renderedContent = runContext.render(this.content).as(String.class).orElse(null);
 
         String renderedParentPageId = null;
         if (this.parentPageId != null) {
