@@ -112,15 +112,12 @@ public class CreatePage extends NotionConnection implements RunnableTask<CreateP
 
         String renderedContent = runContext.render(this.content).as(String.class).orElse(null);
 
-        String renderedParentPageId = null;
-        if (this.parentPageId != null) {
-            renderedParentPageId = runContext.render(this.parentPageId).as(String.class).orElse(null);
-            if (renderedParentPageId != null && !renderedParentPageId.isEmpty()) {
-                // Validate parent page ID format
-                if (!renderedParentPageId.matches("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$") && 
-                    !renderedParentPageId.matches("^[0-9a-f]{32}$")) {
-                    throw new IllegalArgumentException("parentPageId must be a valid Notion page ID (UUID format)");
-                }
+        String renderedParentPageId = runContext.render(this.parentPageId).as(String.class).orElse(null);
+        if (renderedParentPageId != null && !renderedParentPageId.isEmpty()) {
+            // Validate parent page ID format
+            if (!renderedParentPageId.matches("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$") && 
+                !renderedParentPageId.matches("^[0-9a-f]{32}$")) {
+                throw new IllegalArgumentException("parentPageId must be a valid Notion page ID (UUID format)");
             }
         }
 
