@@ -15,7 +15,6 @@ import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
-import java.net.URI;
 import java.util.*;
 
 @SuperBuilder
@@ -146,16 +145,8 @@ public class Update extends AbstractTask {
             NotionResponse finalPageResponse = makeCall(runContext, pageRequestBuilder, NotionResponse.class);
             
             // Store detailed information
-            URI fileURI = store(runContext, List.of(Map.of(
-                "pageResponse", finalPageResponse,
-                "updatedTitle", renderedTitle,
-                "updatedContent", renderedContent,
-                "pageId", renderedPageId
-            )));
-            
             return ((Output.OutputBuilder) buildCommonOutput(finalPageResponse))
                 .content(renderedContent)
-                .uri(fileURI)
                 .message("Page updated successfully")
                 .build();
                 

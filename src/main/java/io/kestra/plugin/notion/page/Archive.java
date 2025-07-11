@@ -12,7 +12,6 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
@@ -87,15 +86,7 @@ public class Archive extends AbstractTask {
             if (Boolean.TRUE.equals(pageInfoResponse.getArchived())) {
                 logger.warn("Page '{}' is already archived", pageTitle);
                 
-                // Store information about already archived page
-                URI fileURI = store(runContext, List.of(Map.of(
-                    "pageResponse", pageInfoResponse,
-                    "alreadyArchived", true,
-                    "pageId", renderedPageId
-                )));
-                
                 return ((Output.OutputBuilder) buildCommonOutput(pageInfoResponse))
-                    .uri(fileURI)
                     .message("Page was already archived")
                     .build();
             }
@@ -109,19 +100,9 @@ public class Archive extends AbstractTask {
             
             NotionResponse archiveResponse = makeCall(runContext, archiveRequestBuilder, NotionResponse.class);
             
-            // Store detailed information about the archiving operation
-            URI fileURI = store(runContext, List.of(Map.of(
-                "originalPageResponse", pageInfoResponse,
-                "archiveResponse", archiveResponse,
-                "pageId", renderedPageId,
-                "archivedTitle", pageTitle,
-                "archivedUrl", pageUrlValue
-            )));
-            
             logger.info("Successfully archived page '{}' (ID: {})", pageTitle, renderedPageId);
             
             return ((Output.OutputBuilder) buildCommonOutput(archiveResponse))
-                .uri(fileURI)
                 .message("Page archived successfully")
                 .build();
                 

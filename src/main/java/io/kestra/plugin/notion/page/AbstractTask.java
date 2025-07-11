@@ -9,7 +9,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -85,12 +84,6 @@ public abstract class AbstractTask extends NotionConnection implements RunnableT
             description = "Additional page properties"
         )
         private Map<String, Object> properties;
-
-        @Schema(
-            title = "Storage URI",
-            description = "URI of the stored file containing detailed page information"
-        )
-        private URI uri;
 
         @Schema(
             title = "Message",

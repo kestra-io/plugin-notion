@@ -135,14 +135,6 @@ public class Create extends NotionConnection implements RunnableTask<Create.Outp
 
         NotionResponse response = makeCall(runContext, requestBuilder, NotionResponse.class);
 
-        // Store detailed response
-        URI fileURI = store(runContext, List.of(Map.of(
-            "response", response,
-            "title", renderedTitle,
-            "content", renderedContent,
-            "parentPageId", renderedParentPageId
-        )));
-
         return Output.builder()
             .pageId(response.getId())
             .url(response.getUrl())
@@ -152,7 +144,6 @@ public class Create extends NotionConnection implements RunnableTask<Create.Outp
             .lastEditedTime(response.getLastEditedTime())
             .archived(response.getArchived())
             .properties(response.getProperties())
-            .uri(fileURI)
             .message("Page created successfully")
             .build();
     }
@@ -253,12 +244,6 @@ public class Create extends NotionConnection implements RunnableTask<Create.Outp
             description = "Page properties returned by Notion"
         )
         private Map<String, Object> properties;
-
-        @Schema(
-            title = "Storage URI",
-            description = "URI of the stored file containing detailed page information"
-        )
-        private URI uri;
 
         @Schema(
             title = "Message",

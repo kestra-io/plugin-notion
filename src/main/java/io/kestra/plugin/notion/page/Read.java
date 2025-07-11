@@ -13,7 +13,6 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
@@ -89,17 +88,8 @@ public class Read extends AbstractTask {
             // Convert blocks to markdown
             String markdownContent = MarkdownConverter.blocksToMarkdown(mapper.valueToTree(childrenResponse.getChildren()));
             
-            // Store detailed information
-            URI fileURI = store(runContext, List.of(Map.of(
-                "pageResponse", pageResponse,
-                "childrenResponse", childrenResponse,
-                "markdownContent", markdownContent,
-                "pageId", renderedPageId
-            )));
-            
             return ((Output.OutputBuilder) buildCommonOutput(pageResponse))
                 .content(markdownContent)
-                .uri(fileURI)
                 .message("Page read successfully")
                 .build();
                 
