@@ -1,8 +1,9 @@
-package io.kestra.plugin.notion;
+package io.kestra.plugin.notion.page;
 
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
+import io.kestra.plugin.notion.NotionConnection;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -18,7 +19,7 @@ import java.util.Map;
 @EqualsAndHashCode
 @Getter
 @NoArgsConstructor
-public abstract class AbstractNotionTask extends NotionConnection implements RunnableTask<AbstractNotionTask.Output> {
+public abstract class AbstractTask extends NotionConnection implements RunnableTask<AbstractTask.Output> {
 
     @Schema(
         title = "Page ID",
@@ -132,7 +133,7 @@ public abstract class AbstractNotionTask extends NotionConnection implements Run
      * @param response the NotionResponse containing page data
      * @return Output builder with common fields populated
      */
-    protected Object buildCommonOutput(NotionResponse response) {
+    protected Object buildCommonOutput(io.kestra.plugin.notion.NotionResponse response) {
         return Output.builder()
             .pageId(response.getId())
             .url(response.getUrl())

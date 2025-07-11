@@ -1,10 +1,11 @@
-package io.kestra.plugin.notion;
+package io.kestra.plugin.notion.page;
 
 import io.kestra.core.http.HttpRequest;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.runners.RunContext;
+import io.kestra.plugin.notion.NotionResponse;
 import io.kestra.plugin.notion.utils.MarkdownConverter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.EqualsAndHashCode;
@@ -37,7 +38,7 @@ import java.util.*;
 
                 tasks:
                   - id: update_page
-                    type: io.kestra.plugin.notion.UpdatePage
+                    type: io.kestra.plugin.notion.page.Update
                     apiToken: "{{ secret('NOTION_API_TOKEN') }}"
                     pageId: "12345678-1234-1234-1234-123456789abc"
                     content: |
@@ -59,7 +60,7 @@ import java.util.*;
 
                 tasks:
                   - id: update_page_full
-                    type: io.kestra.plugin.notion.UpdatePage
+                    type: io.kestra.plugin.notion.page.Update
                     apiToken: "{{ secret('NOTION_API_TOKEN') }}"
                     pageId: "12345678-1234-1234-1234-123456789abc"
                     title: "Updated Meeting Notes"
@@ -79,7 +80,7 @@ import java.util.*;
         )
     }
 )
-public class UpdatePage extends AbstractNotionTask {
+public class Update extends AbstractTask {
 
     @Schema(
         title = "New page title",

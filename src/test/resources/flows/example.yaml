@@ -1,13 +1,58 @@
-id: example
-namespace: io.kestra.templates
+id: notion_page_example
+namespace: io.kestra.plugin.notion
+
+inputs:
+  - id: api_token
+    type: SECRET
+    description: "Notion API Token"
 
 tasks:
-- id: date
-  type: io.kestra.plugin.templates.Example
-  format: "{{taskrun.startDate}}"
-- id: task-id
-  type: io.kestra.plugin.templates.Example
-  format: "{{task.id}}"
-- id: flow-id
-  type: io.kestra.plugin.templates.Example
-  format: "{{outputs['task-id'].child.value}}"
+  - id: create_page
+    type: io.kestra.plugin.notion.page.Create
+    apiToken: "{{ inputs.api_token }}"
+    title: "Example Meeting Notes - {{ now() }}"
+    content: |
+      # Meeting Notes
+
+      **Date:** {{ now() }}
+      **Created by:** Kestra Workflow
+
+      ## Agenda
+      - Project updates
+      - Next steps
+      - Action items
+
+      ## Notes
+      This page was created using the new structured package format:
+      - `io.kestra.plugin.notion.page.Create`
+      - `io.kestra.plugin.notion.page.Read`
+      - `io.kestra.plugin.notion.page.Update`
+      - `io.kestra.plugin.notion.page.Archive`
+
+  - id: read_page
+    type: io.kestra.plugin.notion.page.Read
+    apiToken: "{{ inputs.api_token }}"
+    pageId: "{{ outputs.create_page.pageId }}"
+
+  - id: update_page
+    type: io.kestra.plugin.notion.page.Update
+    apiToken: "{{ inputs.api_token }}"
+    pageId: "{{ outputs.create_page.pageId }}"
+    content: |
+      # Updated Meeting Notes
+
+      **Date:** {{ now() }}
+      **Updated by:** Kestra Workflow
+
+      ## Summary
+      This page has been updated to demonstrate the Update task.
+
+      ## New Content
+      - Updated content replaces all previous content
+      - Clean package structure: `io.kestra.plugin.notion.page.*`
+      - Better organization for future extensions like `io.kestra.plugin.notion.table.*`
+
+  - id: archive_page
+    type: io.kestra.plugin.notion.page.Archive
+    apiToken: "{{ inputs.api_token }}"
+    pageId: "{{ outputs.create_page.pageId }}"

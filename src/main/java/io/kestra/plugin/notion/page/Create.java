@@ -1,4 +1,4 @@
-package io.kestra.plugin.notion;
+package io.kestra.plugin.notion.page;
 
 import io.kestra.core.http.HttpRequest;
 import io.kestra.core.models.annotations.Example;
@@ -6,6 +6,8 @@ import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
+import io.kestra.plugin.notion.NotionConnection;
+import io.kestra.plugin.notion.NotionResponse;
 import io.kestra.plugin.notion.utils.MarkdownConverter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
@@ -40,7 +42,7 @@ import java.util.*;
 
                 tasks:
                   - id: create_page
-                    type: io.kestra.plugin.notion.CreatePage
+                    type: io.kestra.plugin.notion.page.Create
                     apiToken: "{{ secret('NOTION_API_TOKEN') }}"
                     title: "Meeting Notes"
                     content: |
@@ -64,7 +66,7 @@ import java.util.*;
 
                 tasks:
                   - id: create_child_page
-                    type: io.kestra.plugin.notion.CreatePage
+                    type: io.kestra.plugin.notion.page.Create
                     apiToken: "{{ secret('NOTION_API_TOKEN') }}"
                     title: "Sprint Planning"
                     parentPageId: "12345678-1234-1234-1234-123456789abc"
@@ -80,7 +82,7 @@ import java.util.*;
         )
     }
 )
-public class CreatePage extends NotionConnection implements RunnableTask<CreatePage.Output> {
+public class Create extends NotionConnection implements RunnableTask<Create.Output> {
 
     @Schema(
         title = "Page title",
@@ -198,7 +200,7 @@ public class CreatePage extends NotionConnection implements RunnableTask<CreateP
     }
 
     /**
-     * Output structure for CreatePage operation
+     * Output structure for Create operation
      */
     @Getter
     @Builder

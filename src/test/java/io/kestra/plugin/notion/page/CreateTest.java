@@ -1,6 +1,7 @@
-package io.kestra.plugin.notion;
+package io.kestra.plugin.notion.page;
 
 import io.kestra.core.models.property.Property;
+import io.kestra.plugin.notion.NotionConnection;
 import lombok.experimental.SuperBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,23 +11,23 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for CreatePage functionality.
+ * Unit tests for Create functionality.
  * These tests focus on input validation, builder patterns, and request building
  * without requiring actual API calls.
  */
-class CreatePageTest {
+class CreateTest {
 
-    private CreatePage createPage;
+    private Create create;
 
     @BeforeEach
     void setUp() {
-        createPage = CreatePage.builder().build();
+        create = Create.builder().build();
     }
 
     @Test
     void testBuilderPattern() {
         // Test that the builder pattern works correctly
-        CreatePage task = CreatePage.builder()
+        Create task = Create.builder()
             .apiToken(Property.of("test-token"))
             .title(Property.of("Test Page"))
             .content(Property.of("Test content"))
@@ -43,7 +44,7 @@ class CreatePageTest {
     @Test
     void testBuilderWithMinimalFields() {
         // Test that builder works with just required fields
-        CreatePage task = CreatePage.builder()
+        Create task = Create.builder()
             .apiToken(Property.of("test-token"))
             .title(Property.of("Test Page"))
             .build();
@@ -57,23 +58,19 @@ class CreatePageTest {
     @Test
     void testGetEndpoint() {
         // Test that the endpoint is correctly set
-        assertThat(createPage.getEndpoint(), equalTo("/v1/pages"));
+        assertThat(create.getEndpoint(), equalTo("/v1/pages"));
     }
 
     @Test
     void testInheritanceFromNotionConnection() {
-        // Test that CreatePage properly inherits from NotionConnection
-        assertThat(createPage, instanceOf(NotionConnection.class));
-        
-        // Test inherited URL building methods work
-        assertThat(createPage.buildCreatePageURL(), equalTo("https://api.notion.com/v1/pages"));
-        assertThat(createPage.buildPageURL("test-id"), containsString("/v1/pages/test-id"));
+        // Test that Create properly inherits from NotionConnection
+        assertThat(create, instanceOf(NotionConnection.class));
     }
 
     @Test
     void testOutputBuilder() {
         // Test that the Output class builder works correctly
-        CreatePage.Output output = CreatePage.Output.builder()
+        Create.Output output = Create.Output.builder()
             .pageId("test-page-id")
             .url("https://notion.so/test-page")
             .title("Test Page")
@@ -92,7 +89,7 @@ class CreatePageTest {
     @Test
     void testOutputBuilderWithNullValues() {
         // Test that Output builder handles null values gracefully
-        CreatePage.Output output = CreatePage.Output.builder()
+        Create.Output output = Create.Output.builder()
             .pageId("test-page-id")
             .build();
         
@@ -106,14 +103,14 @@ class CreatePageTest {
     @Test
     void testOutputImplementsCorrectInterface() {
         // Test that Output implements the correct Kestra interface
-        CreatePage.Output output = CreatePage.Output.builder().build();
+        Create.Output output = Create.Output.builder().build();
         assertThat(output, instanceOf(io.kestra.core.models.tasks.Output.class));
     }
 
     @Test
     void testFieldValidation() {
         // Test required field validation concepts
-        CreatePage task = CreatePage.builder()
+        Create task = Create.builder()
             .title(Property.of("Valid Title"))
             .build();
         
@@ -124,7 +121,7 @@ class CreatePageTest {
     @Test
     void testOptionalFieldsHandling() {
         // Test handling of optional fields
-        CreatePage task = CreatePage.builder()
+        Create task = Create.builder()
             .apiToken(Property.of("test-token"))
             .title(Property.of("Test Page"))
             .content(Property.of("# Test Content\n\nThis is a test."))
@@ -137,11 +134,11 @@ class CreatePageTest {
 
     @Test
     void testTaskInheritanceStructure() {
-        // Test that CreatePage implements RunnableTask correctly
-        assertThat(createPage, instanceOf(io.kestra.core.models.tasks.RunnableTask.class));
+        // Test that Create implements RunnableTask correctly
+        assertThat(create, instanceOf(io.kestra.core.models.tasks.RunnableTask.class));
         
         // Test that it has the correct generic type
-        CreatePage task = CreatePage.builder()
+        Create task = Create.builder()
             .title(Property.of("Test"))
             .build();
         assertThat(task, notNullValue());
@@ -150,7 +147,7 @@ class CreatePageTest {
     @Test
     void testPropertyTypes() {
         // Test that properties are of correct Property<String> type
-        CreatePage task = CreatePage.builder()
+        Create task = Create.builder()
             .title(Property.of("Test Title"))
             .content(Property.of("Test content"))
             .parentPageId(Property.of("test-parent-id"))

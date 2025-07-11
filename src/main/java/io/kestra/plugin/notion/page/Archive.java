@@ -1,9 +1,10 @@
-package io.kestra.plugin.notion;
+package io.kestra.plugin.notion.page;
 
 import io.kestra.core.http.HttpRequest;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.runners.RunContext;
+import io.kestra.plugin.notion.NotionResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -39,7 +40,7 @@ import java.util.Map;
 
                 tasks:
                   - id: archive_page
-                    type: io.kestra.plugin.notion.ArchivePage
+                    type: io.kestra.plugin.notion.page.Archive
                     apiToken: "{{ secret('NOTION_API_TOKEN') }}"
                     pageId: "{{ inputs.page_id }}"
                 """
@@ -53,14 +54,14 @@ import java.util.Map;
 
                 tasks:
                   - id: archive_old_page
-                    type: io.kestra.plugin.notion.ArchivePage
+                    type: io.kestra.plugin.notion.page.Archive
                     apiToken: "{{ secret('NOTION_API_TOKEN') }}"
                     pageId: "12345678-1234-1234-1234-123456789abc"
                 """
         )
     }
 )
-public class ArchivePage extends AbstractNotionTask {
+public class Archive extends AbstractTask {
 
     @Override
     public Output run(RunContext runContext) throws Exception {

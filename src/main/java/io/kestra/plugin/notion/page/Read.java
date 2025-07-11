@@ -1,9 +1,10 @@
-package io.kestra.plugin.notion;
+package io.kestra.plugin.notion.page;
 
 import io.kestra.core.http.HttpRequest;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.runners.RunContext;
+import io.kestra.plugin.notion.NotionResponse;
 import io.kestra.plugin.notion.utils.MarkdownConverter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.EqualsAndHashCode;
@@ -13,7 +14,6 @@ import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -41,7 +41,7 @@ import java.util.Map;
 
                 tasks:
                   - id: read_page
-                    type: io.kestra.plugin.notion.ReadPage
+                    type: io.kestra.plugin.notion.page.Read
                     apiToken: "{{ secret('NOTION_API_TOKEN') }}"
                     pageId: "{{ inputs.page_id }}"
                 """
@@ -55,14 +55,14 @@ import java.util.Map;
 
                 tasks:
                   - id: read_meeting_notes
-                    type: io.kestra.plugin.notion.ReadPage
+                    type: io.kestra.plugin.notion.page.Read
                     apiToken: "{{ secret('NOTION_API_TOKEN') }}"
                     pageId: "12345678-1234-1234-1234-123456789abc"
                 """
         )
     }
 )
-public class ReadPage extends AbstractNotionTask {
+public class Read extends AbstractTask {
 
     @Override
     public Output run(RunContext runContext) throws Exception {
