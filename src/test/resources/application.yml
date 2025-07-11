@@ -6,4 +6,4 @@ kestra:
   storage:
     type: local
     local:
-      base-path: /tmp/kestra/storage
+      base-path: /tmp/unittest 
