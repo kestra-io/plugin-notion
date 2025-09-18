@@ -27,10 +27,10 @@ class ReadTest {
     void testBuilderPattern() {
         // Test that the builder pattern works correctly
         Read task = Read.builder()
-            .apiToken(Property.of("test-token"))
-            .pageId(Property.of("12345678-1234-1234-1234-123456789abc"))
+            .apiToken(Property.ofValue("test-token"))
+            .pageId(Property.ofValue("12345678-1234-1234-1234-123456789abc"))
             .build();
-        
+
         assertThat(task, notNullValue());
         assertThat(task.getApiToken(), notNullValue());
         assertThat(task.getPageId(), notNullValue());
@@ -53,10 +53,10 @@ class ReadTest {
     void testTaskInheritanceStructure() {
         // Test that Read implements RunnableTask correctly
         assertThat(read, instanceOf(io.kestra.core.models.tasks.RunnableTask.class));
-        
+
         // Test that it has the correct generic type (inherited from AbstractTask)
         Read task = Read.builder()
-            .pageId(Property.of("12345678-1234-1234-1234-123456789abc"))
+            .pageId(Property.ofValue("12345678-1234-1234-1234-123456789abc"))
             .build();
         assertThat(task, notNullValue());
     }
@@ -65,10 +65,10 @@ class ReadTest {
     void testPropertyTypes() {
         // Test that properties are of correct Property<String> type
         Read task = Read.builder()
-            .pageId(Property.of("test-page-id"))
-            .apiToken(Property.of("test-token"))
+            .pageId(Property.ofValue("test-page-id"))
+            .apiToken(Property.ofValue("test-token"))
             .build();
-        
+
         // Verify properties can be accessed (they should not be null)
         assertThat(task.getPageId(), notNullValue());
         assertThat(task.getApiToken(), notNullValue());
@@ -78,10 +78,10 @@ class ReadTest {
     void testRequiredFieldsHandling() {
         // Test that pageId is required (inherited from AbstractTask)
         Read task = Read.builder()
-            .apiToken(Property.of("test-token"))
-            .pageId(Property.of("12345678-1234-1234-1234-123456789abc"))
+            .apiToken(Property.ofValue("test-token"))
+            .pageId(Property.ofValue("12345678-1234-1234-1234-123456789abc"))
             .build();
-        
+
         assertThat(task.getPageId(), notNullValue());
         assertThat(task.getApiToken(), notNullValue());
     }
@@ -90,17 +90,17 @@ class ReadTest {
     void testOutputInheritance() {
         // Test that Read uses the common Output from AbstractTask
         // This test verifies the structure is properly inherited
-        
+
         // The output should be the same as AbstractTask.Output
         assertThat(AbstractTask.Output.class, notNullValue());
-        
+
         // Test output builder
         AbstractTask.Output output = AbstractTask.Output.builder()
             .pageId("test-page-id")
             .content("test content")
             .message("Page read successfully")
             .build();
-        
+
         assertThat(output, notNullValue());
         assertThat(output.getPageId(), equalTo("test-page-id"));
         assertThat(output.getContent(), equalTo("test content"));
@@ -111,10 +111,10 @@ class ReadTest {
     void testMinimalConfiguration() {
         // Test that Read can be built with minimal required fields
         Read task = Read.builder()
-            .pageId(Property.of("12345678-1234-1234-1234-123456789abc"))
+            .pageId(Property.ofValue("12345678-1234-1234-1234-123456789abc"))
             .build();
-        
+
         assertThat(task, notNullValue());
         assertThat(task.getPageId(), notNullValue());
     }
-} 
+}

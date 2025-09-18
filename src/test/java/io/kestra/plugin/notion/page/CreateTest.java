@@ -28,12 +28,12 @@ class CreateTest {
     void testBuilderPattern() {
         // Test that the builder pattern works correctly
         Create task = Create.builder()
-            .apiToken(Property.of("test-token"))
-            .title(Property.of("Test Page"))
-            .content(Property.of("Test content"))
-            .parentPageId(Property.of("12345678-1234-1234-1234-123456789abc"))
+            .apiToken(Property.ofValue("test-token"))
+            .title(Property.ofValue("Test Page"))
+            .content(Property.ofValue("Test content"))
+            .parentPageId(Property.ofValue("12345678-1234-1234-1234-123456789abc"))
             .build();
-        
+
         assertThat(task, notNullValue());
         assertThat(task.getApiToken(), notNullValue());
         assertThat(task.getTitle(), notNullValue());
@@ -45,10 +45,10 @@ class CreateTest {
     void testBuilderWithMinimalFields() {
         // Test that builder works with just required fields
         Create task = Create.builder()
-            .apiToken(Property.of("test-token"))
-            .title(Property.of("Test Page"))
+            .apiToken(Property.ofValue("test-token"))
+            .title(Property.ofValue("Test Page"))
             .build();
-        
+
         assertThat(task, notNullValue());
         assertThat(task.getTitle(), notNullValue());
         assertThat(task.getContent(), nullValue());
@@ -77,7 +77,7 @@ class CreateTest {
             .content("Test content")
             .message("Page created successfully")
             .build();
-        
+
         assertThat(output, notNullValue());
         assertThat(output.getPageId(), equalTo("test-page-id"));
         assertThat(output.getUrl(), equalTo("https://notion.so/test-page"));
@@ -92,7 +92,7 @@ class CreateTest {
         Create.Output output = Create.Output.builder()
             .pageId("test-page-id")
             .build();
-        
+
         assertThat(output, notNullValue());
         assertThat(output.getPageId(), equalTo("test-page-id"));
         assertThat(output.getUrl(), nullValue());
@@ -111,9 +111,9 @@ class CreateTest {
     void testFieldValidation() {
         // Test required field validation concepts
         Create task = Create.builder()
-            .title(Property.of("Valid Title"))
+            .title(Property.ofValue("Valid Title"))
             .build();
-        
+
         // Test that required fields are properly set
         assertThat(task.getTitle(), notNullValue());
     }
@@ -122,12 +122,12 @@ class CreateTest {
     void testOptionalFieldsHandling() {
         // Test handling of optional fields
         Create task = Create.builder()
-            .apiToken(Property.of("test-token"))
-            .title(Property.of("Test Page"))
-            .content(Property.of("# Test Content\n\nThis is a test."))
-            .parentPageId(Property.of("12345678-1234-1234-1234-123456789abc"))
+            .apiToken(Property.ofValue("test-token"))
+            .title(Property.ofValue("Test Page"))
+            .content(Property.ofValue("# Test Content\n\nThis is a test."))
+            .parentPageId(Property.ofValue("12345678-1234-1234-1234-123456789abc"))
             .build();
-        
+
         assertThat(task.getContent(), notNullValue());
         assertThat(task.getParentPageId(), notNullValue());
     }
@@ -136,10 +136,10 @@ class CreateTest {
     void testTaskInheritanceStructure() {
         // Test that Create implements RunnableTask correctly
         assertThat(create, instanceOf(io.kestra.core.models.tasks.RunnableTask.class));
-        
+
         // Test that it has the correct generic type
         Create task = Create.builder()
-            .title(Property.of("Test"))
+            .title(Property.ofValue("Test"))
             .build();
         assertThat(task, notNullValue());
     }
@@ -148,14 +148,14 @@ class CreateTest {
     void testPropertyTypes() {
         // Test that properties are of correct Property<String> type
         Create task = Create.builder()
-            .title(Property.of("Test Title"))
-            .content(Property.of("Test content"))
-            .parentPageId(Property.of("test-parent-id"))
+            .title(Property.ofValue("Test Title"))
+            .content(Property.ofValue("Test content"))
+            .parentPageId(Property.ofValue("test-parent-id"))
             .build();
-        
+
         // Verify properties can be accessed (they should not be null)
         assertThat(task.getTitle(), notNullValue());
         assertThat(task.getContent(), notNullValue());
         assertThat(task.getParentPageId(), notNullValue());
     }
-} 
+}

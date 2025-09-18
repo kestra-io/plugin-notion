@@ -32,7 +32,7 @@ class NotionConnectionTest {
         connection = TestNotionConnection.builder().build();
     }
 
-    @Test 
+    @Test
     void testConstants() {
         // Test that all API constants are properly defined
         assertThat(NotionConnection.NOTION_API_URL, equalTo("https://api.notion.com"));
@@ -46,14 +46,14 @@ class NotionConnectionTest {
     @Test
     void testBuildNotionURL() {
         String url = connection.buildNotionURL();
-        
+
         assertThat(url, equalTo("https://api.notion.com/test"));
     }
 
     @Test
     void testBuildCreatePageURL() {
         String url = connection.buildCreatePageURL();
-        
+
         assertThat(url, equalTo("https://api.notion.com/v1/pages"));
     }
 
@@ -61,7 +61,7 @@ class NotionConnectionTest {
     void testBuildPageURL() {
         String pageId = "test-page-id-123";
         String url = connection.buildPageURL(pageId);
-        
+
         assertThat(url, equalTo("https://api.notion.com/v1/pages/" + pageId));
     }
 
@@ -69,7 +69,7 @@ class NotionConnectionTest {
     void testBuildPageChildrenURL() {
         String pageId = "test-page-id-123";
         String url = connection.buildPageChildrenURL(pageId);
-        
+
         assertThat(url, equalTo("https://api.notion.com/v1/blocks/" + pageId + "/children"));
     }
 
@@ -77,14 +77,14 @@ class NotionConnectionTest {
     void testBuildBlockURL() {
         String blockId = "test-block-id-456";
         String url = connection.buildBlockURL(blockId);
-        
+
         assertThat(url, equalTo("https://api.notion.com/v1/blocks/" + blockId));
     }
 
     @Test
     void testBuildSearchURL() {
         String url = connection.buildSearchURL();
-        
+
         assertThat(url, equalTo("https://api.notion.com/v1/search"));
     }
 
@@ -92,9 +92,9 @@ class NotionConnectionTest {
     void testBuilderPattern() {
         // Test that the builder pattern works correctly
         TestNotionConnection connection = TestNotionConnection.builder()
-            .apiToken(Property.of("test-token"))
+            .apiToken(Property.ofValue("test-token"))
             .build();
-        
+
         assertThat(connection, notNullValue());
         assertThat(connection.getApiToken(), notNullValue());
     }
@@ -103,7 +103,7 @@ class NotionConnectionTest {
     void testBuilderWithoutToken() {
         // Test that builder works without token (which is valid for URL building methods)
         TestNotionConnection connection = TestNotionConnection.builder().build();
-        
+
         assertThat(connection, notNullValue());
         // These methods should work without a token
         assertThat(connection.buildCreatePageURL(), notNullValue());
@@ -115,10 +115,10 @@ class NotionConnectionTest {
         // Test URL building with various page/block IDs
         String pageIdWithDashes = "01234567-89ab-cdef-0123-456789abcdef";
         String blockIdWithSpecialChars = "block_123_test";
-        
-        assertThat(connection.buildPageURL(pageIdWithDashes), 
+
+        assertThat(connection.buildPageURL(pageIdWithDashes),
             equalTo("https://api.notion.com/v1/pages/" + pageIdWithDashes));
-        assertThat(connection.buildBlockURL(blockIdWithSpecialChars), 
+        assertThat(connection.buildBlockURL(blockIdWithSpecialChars),
             equalTo("https://api.notion.com/v1/blocks/" + blockIdWithSpecialChars));
     }
 
@@ -133,11 +133,11 @@ class NotionConnectionTest {
     void testBuilderWithHttpConfiguration() {
         // Test that HTTP configuration can be set through builder
         TestNotionConnection connectionWithConfig = TestNotionConnection.builder()
-            .apiToken(Property.of("test-token"))
+            .apiToken(Property.ofValue("test-token"))
             .options(null) // HTTP configuration would go here in real usage
             .build();
-        
+
         assertThat(connectionWithConfig, notNullValue());
         assertThat(connectionWithConfig.getOptions(), nullValue());
     }
-} 
+}
