@@ -1,0 +1,8 @@
+group: io.kestra.plugin.notion
+name: "notion"
+title: "Notion"
+description: "This sub-group of plugins contains tasks for integrating with Notion. Notion is a workspace platform for managing documents, databases, and workflows collaboratively."
+body: ""
+videos: []
+createdBy: "Kestra Core Team"
+managedBy: "Kestra Core Team"

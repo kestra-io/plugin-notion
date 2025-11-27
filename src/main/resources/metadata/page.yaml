@@ -1,0 +1,8 @@
+group: io.kestra.plugin.notion.page
+name: "page"
+title: "Notion"
+description: "This sub-group of plugins contains tasks for using Notion API to create, read, update, and archive pages with markdown content."
+body: ""
+videos: []
+createdBy: "Kestra Core Team"
+managedBy: "Kestra Core Team"
