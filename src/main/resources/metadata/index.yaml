@@ -1,8 +1,8 @@
 group: io.kestra.plugin.notion
 name: "notion"
 title: "Notion"
-description: "This sub-group of plugins contains tasks for integrating with Notion. Notion is a workspace platform for managing documents, databases, and workflows collaboratively."
-body: ""
+description: "Tasks that create, read, update, and archive Notion pages."
+body: "Provide a Notion integration token and page/database IDs to create pages from markdown/blocks, read or update content, and archive pages, returning API payloads for documentation workflows."
 videos: []
 createdBy: "Kestra Core Team"
 managedBy: "Kestra Core Team"
