@@ -85,6 +85,7 @@ public class NotionResponse {
     /**
      * Child content blocks (for pages with content)
      */
+    @JsonProperty("results")
     private List<Map<String, Object>> children;
     
     /**
