@@ -113,4 +113,80 @@ public class NotionResponse {
      * Additional raw data that might not be mapped to specific fields
      */
     private Map<String, Object> additionalData;
-} 
+
+    public String getId() {
+        return id;
+    }
+
+    public String getObject() {
+        return object;
+    }
+
+    public Instant getCreatedTime() {
+        return createdTime;
+    }
+
+    public Map<String, Object> getCreatedBy() {
+        return createdBy;
+    }
+
+    public Instant getLastEditedTime() {
+        return lastEditedTime;
+    }
+
+    public Map<String, Object> getLastEditedBy() {
+        return lastEditedBy;
+    }
+
+    public Boolean getArchived() {
+        return archived;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public String getPublicUrl() {
+        return publicUrl;
+    }
+
+    public Map<String, Object> getProperties() {
+        return properties;
+    }
+
+    public Map<String, Object> getParent() {
+        return parent;
+    }
+
+    public Map<String, Object> getIcon() {
+        return icon;
+    }
+
+    public Map<String, Object> getCover() {
+        return cover;
+    }
+
+    public List<Map<String, Object>> getChildren() {
+        return children;
+    }
+
+    public Map<String, Object> getContent() {
+        return content;
+    }
+
+    public Boolean getHasMore() {
+        return hasMore;
+    }
+
+    public String getNextCursor() {
+        return nextCursor;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public Map<String, Object> getAdditionalData() {
+        return additionalData;
+    }
+}
