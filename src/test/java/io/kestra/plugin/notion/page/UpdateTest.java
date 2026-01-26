@@ -1,6 +1,8 @@
 package io.kestra.plugin.notion.page;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.kestra.core.models.property.Property;
+import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.notion.NotionConnection;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.junit.jupiter.api.Test;
@@ -18,6 +20,19 @@ import static org.junit.jupiter.api.Assertions.*;
  * without requiring actual API calls.
  */
 class UpdateTest {
+
+    private static class TestUpdate extends Update {
+        private String capturedPageId;
+        private ArrayNode capturedBlocks;
+        private int addBlocksCalls;
+
+        @Override
+        protected void addBlocksToPage(RunContext runContext, String pageId, ArrayNode blocks) {
+            this.capturedPageId = pageId;
+            this.capturedBlocks = blocks;
+            this.addBlocksCalls++;
+        }
+    }
 
     private Update update;
 
@@ -179,6 +194,28 @@ class UpdateTest {
 
         assertThat(both.getTitle(), notNullValue());
         assertThat(both.getContent(), notNullValue());
+    }
+
+    @Test
+    void testAppendPageContentAddsBlocks() throws Exception {
+        TestUpdate task = new TestUpdate();
+
+        task.appendPageContent(null, "test-page-id", "# Title\n\nParagraph");
+
+        assertThat(task.addBlocksCalls, equalTo(1));
+        assertThat(task.capturedPageId, equalTo("test-page-id"));
+        assertThat(task.capturedBlocks, notNullValue());
+        assertThat(task.capturedBlocks.size(), greaterThan(0));
+    }
+
+    @Test
+    void testAppendPageContentSkipsBlankContent() throws Exception {
+        TestUpdate task = new TestUpdate();
+
+        task.appendPageContent(null, "test-page-id", "   ");
+        task.appendPageContent(null, "test-page-id", null);
+
+        assertThat(task.addBlocksCalls, equalTo(0));
     }
 
     @Test

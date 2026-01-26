@@ -179,7 +179,7 @@ public class Update extends AbstractTask {
     /**
      * Appends new markdown content to the bottom of the page
      */
-    private void appendPageContent(RunContext runContext, String pageId, String newContent) throws Exception {
+    protected void appendPageContent(RunContext runContext, String pageId, String newContent) throws Exception {
         // Add new blocks from markdown to the end of the page
         if (newContent != null && !newContent.trim().isEmpty()) {
             ArrayNode newBlocksArray = MarkdownConverter.markdownToBlocks(newContent);
@@ -192,7 +192,7 @@ public class Update extends AbstractTask {
     /**
      * Adds new blocks to a page
      */
-    private void addBlocksToPage(RunContext runContext, String pageId, ArrayNode blocks) throws Exception {
+    protected void addBlocksToPage(RunContext runContext, String pageId, ArrayNode blocks) throws Exception {
         Map<String, Object> requestBody = Map.of("children", blocks);
         
         String url = buildPageChildrenURL(pageId);
