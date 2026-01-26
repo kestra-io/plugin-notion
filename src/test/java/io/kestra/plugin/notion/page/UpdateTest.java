@@ -2,8 +2,11 @@ package io.kestra.plugin.notion.page;
 
 import io.kestra.core.models.property.Property;
 import io.kestra.plugin.notion.NotionConnection;
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
+
+import java.lang.reflect.Field;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -176,5 +179,22 @@ class UpdateTest {
 
         assertThat(both.getTitle(), notNullValue());
         assertThat(both.getContent(), notNullValue());
+    }
+
+    @Test
+    void testUpdateSchemaDescriptionMentionsAppend() {
+        Schema schema = Update.class.getAnnotation(Schema.class);
+        assertThat(schema, notNullValue());
+        assertThat(schema.description(), containsString("append"));
+        assertThat(schema.description(), not(containsString("replace")));
+    }
+
+    @Test
+    void testContentSchemaDescriptionMentionsAppend() throws Exception {
+        Field contentField = Update.class.getDeclaredField("content");
+        Schema schema = contentField.getAnnotation(Schema.class);
+        assertThat(schema, notNullValue());
+        assertThat(schema.description(), containsString("append"));
+        assertThat(schema.description(), not(containsString("replace")));
     }
 }
