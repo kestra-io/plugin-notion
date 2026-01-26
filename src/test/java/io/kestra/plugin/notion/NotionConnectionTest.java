@@ -1,6 +1,7 @@
 package io.kestra.plugin.notion;
 
 import io.kestra.core.models.property.Property;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,7 +19,8 @@ class NotionConnectionTest {
 
     // Concrete implementation for testing
     @SuperBuilder
-    private static class TestNotionConnection extends NotionConnection {
+    @NoArgsConstructor
+    public static class TestNotionConnection extends NotionConnection {
         @Override
         protected String getEndpoint() {
             return "/test";
