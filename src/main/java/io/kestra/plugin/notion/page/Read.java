@@ -88,10 +88,7 @@ public class Read extends AbstractTask {
             // Convert blocks to markdown
             String markdownContent = MarkdownConverter.blocksToMarkdown(mapper.valueToTree(childrenResponse.getChildren()));
             
-            return ((Output.OutputBuilder) buildCommonOutput(pageResponse))
-                .content(markdownContent)
-                .message("Page read successfully")
-                .build();
+            return buildOutput(pageResponse, markdownContent, "Page read successfully");
                 
         } catch (Exception e) {
             logger.error("Error reading Notion page: {}", e.getMessage());
