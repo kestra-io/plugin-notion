@@ -86,9 +86,7 @@ public class Archive extends AbstractTask {
             if (Boolean.TRUE.equals(pageInfoResponse.getArchived())) {
                 logger.warn("Page '{}' is already archived", pageTitle);
                 
-                return ((Output.OutputBuilder) buildCommonOutput(pageInfoResponse))
-                    .message("Page was already archived")
-                    .build();
+                return buildOutput(pageInfoResponse, null, "Page was already archived");
             }
             
             // Archive the page by setting archived = true
@@ -102,9 +100,7 @@ public class Archive extends AbstractTask {
             
             logger.info("Successfully archived page '{}' (ID: {})", pageTitle, renderedPageId);
             
-            return ((Output.OutputBuilder) buildCommonOutput(archiveResponse))
-                .message("Page archived successfully")
-                .build();
+            return buildOutput(archiveResponse, null, "Page archived successfully");
                 
         } catch (Exception e) {
             logger.error("Error archiving Notion page: {}", e.getMessage());

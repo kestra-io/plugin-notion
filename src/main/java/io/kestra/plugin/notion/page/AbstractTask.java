@@ -34,7 +34,6 @@ public abstract class AbstractTask extends NotionConnection implements RunnableT
     @Builder
     @Getter
     @NoArgsConstructor
-    @AllArgsConstructor
     public static class Output implements io.kestra.core.models.tasks.Output {
         
         @Schema(
@@ -90,6 +89,26 @@ public abstract class AbstractTask extends NotionConnection implements RunnableT
             description = "Operation result message"
         )
         private String message;
+
+        public Output(String pageId,
+                      String url,
+                      String title,
+                      String content,
+                      Instant createdTime,
+                      Instant lastEditedTime,
+                      Boolean archived,
+                      Map<String, Object> properties,
+                      String message) {
+            this.pageId = pageId;
+            this.url = url;
+            this.title = title;
+            this.content = content;
+            this.createdTime = createdTime;
+            this.lastEditedTime = lastEditedTime;
+            this.archived = archived;
+            this.properties = properties;
+            this.message = message;
+        }
     }
 
     /**
@@ -121,21 +140,25 @@ public abstract class AbstractTask extends NotionConnection implements RunnableT
     }
 
     /**
-     * Helper method to build common output from NotionResponse.
-     * Returns a builder that can be further customized before calling build().
-     * 
+     * Helper method to build output from NotionResponse.
+     *
      * @param response the NotionResponse containing page data
-     * @return Output builder with common fields populated
+     * @param content the content payload, if any
+     * @param message operation result message
+     * @return Output object with fields populated
      */
-    protected Object buildCommonOutput(io.kestra.plugin.notion.NotionResponse response) {
-        return Output.builder()
-            .pageId(response.getId())
-            .url(response.getUrl())
-            .title(extractPageTitle(response.getProperties()))
-            .createdTime(response.getCreatedTime())
-            .lastEditedTime(response.getLastEditedTime())
-            .archived(response.getArchived())
-            .properties(response.getProperties());
+    protected Output buildOutput(io.kestra.plugin.notion.NotionResponse response, String content, String message) {
+        return new Output(
+            response.getId(),
+            response.getUrl(),
+            extractPageTitle(response.getProperties()),
+            content,
+            response.getCreatedTime(),
+            response.getLastEditedTime(),
+            response.getArchived(),
+            response.getProperties(),
+            message
+        );
     }
 
 
