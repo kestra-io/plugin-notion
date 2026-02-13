@@ -24,7 +24,7 @@ import java.util.*;
 @NoArgsConstructor
 @Schema(
     title = "Update a Notion page",
-    description = "Updates an existing Notion page by replacing all content with new markdown content (PUT-style operation). Optionally updates the page title."
+    description = "Updates an existing Notion page by appending new markdown content to the bottom of the page. Optionally updates the page title."
 )
 @Plugin(
     examples = {
@@ -89,7 +89,7 @@ public class Update extends AbstractTask {
 
     @Schema(
         title = "New page content",
-        description = "The new content for the page in markdown format. This will replace ALL existing content (PUT-style operation)."
+        description = "The new content for the page in markdown format. This will be appended to the bottom of the page."
     )
     private Property<String> content;
 
@@ -131,10 +131,10 @@ public class Update extends AbstractTask {
                 pageResponse = makeCall(runContext, pageRequestBuilder, NotionResponse.class);
             }
             
-            // Step 2: Replace page content (PUT-style operation)
+            // Step 2: Append page content to the bottom
             if (renderedContent != null && !renderedContent.trim().isEmpty()) {
-                replacePageContent(runContext, renderedPageId, renderedContent);
-                logger.info("Replaced page content with new markdown content");
+                appendPageContent(runContext, renderedPageId, renderedContent);
+                logger.info("Appended new markdown content to the page");
             } else {
                 logger.info("No content provided, skipping content update");
             }
@@ -145,10 +145,7 @@ public class Update extends AbstractTask {
             NotionResponse finalPageResponse = makeCall(runContext, pageRequestBuilder, NotionResponse.class);
             
             // Store detailed information
-            return ((Output.OutputBuilder) buildCommonOutput(finalPageResponse))
-                .content(renderedContent)
-                .message("Page updated successfully")
-                .build();
+            return buildOutput(finalPageResponse, renderedContent, "Page updated successfully");
                 
         } catch (Exception e) {
             logger.error("Error updating Notion page: {}", e.getMessage());
@@ -180,27 +177,10 @@ public class Update extends AbstractTask {
     }
 
     /**
-     * Replaces all page content with new markdown content (PUT-style operation)
-     * Note: Notion doesn't have a direct "replace all content" API, so this implementation
-     * archives existing blocks and adds new ones. This is a simplified approach.
+     * Appends new markdown content to the bottom of the page
      */
-    private void replacePageContent(RunContext runContext, String pageId, String newContent) throws Exception {
-        // Step 1: Get existing child blocks
-        String childrenUrl = buildPageChildrenURL(pageId);
-        HttpRequest.HttpRequestBuilder childrenRequestBuilder = buildGetRequest(runContext, childrenUrl);
-        NotionResponse childrenResponse = makeCall(runContext, childrenRequestBuilder, NotionResponse.class);
-        
-        // Step 2: Archive existing blocks (Notion's way of "deleting" blocks)
-        if (childrenResponse.getChildren() != null && !childrenResponse.getChildren().isEmpty()) {
-            for (Map<String, Object> block : childrenResponse.getChildren()) {
-                String blockId = (String) block.get("id");
-                if (blockId != null) {
-                    archiveBlock(runContext, blockId);
-                }
-            }
-        }
-        
-        // Step 3: Add new blocks from markdown
+    protected void appendPageContent(RunContext runContext, String pageId, String newContent) throws Exception {
+        // Add new blocks from markdown to the end of the page
         if (newContent != null && !newContent.trim().isEmpty()) {
             ArrayNode newBlocksArray = MarkdownConverter.markdownToBlocks(newContent);
             if (newBlocksArray.size() > 0) {
@@ -210,21 +190,9 @@ public class Update extends AbstractTask {
     }
 
     /**
-     * Archives (deletes) a block by setting its archived property to true
-     */
-    private void archiveBlock(RunContext runContext, String blockId) throws Exception {
-        Map<String, Object> requestBody = Map.of("archived", true);
-        
-        String url = buildBlockURL(blockId);
-        HttpRequest.HttpRequestBuilder requestBuilder = buildPatchRequest(runContext, url, requestBody);
-        
-        makeCall(runContext, requestBuilder, NotionResponse.class);
-    }
-
-    /**
      * Adds new blocks to a page
      */
-    private void addBlocksToPage(RunContext runContext, String pageId, ArrayNode blocks) throws Exception {
+    protected void addBlocksToPage(RunContext runContext, String pageId, ArrayNode blocks) throws Exception {
         Map<String, Object> requestBody = Map.of("children", blocks);
         
         String url = buildPageChildrenURL(pageId);
