@@ -24,7 +24,7 @@ import java.util.*;
 @NoArgsConstructor
 @Schema(
     title = "Update a Notion page",
-    description = "Updates an existing Notion page by appending new markdown content to the bottom of the page. Optionally updates the page title."
+    description = "Updates a Notion page by appending markdown blocks to the bottom and optionally replacing the title. Fails if neither title nor content is provided."
 )
 @Plugin(
     examples = {

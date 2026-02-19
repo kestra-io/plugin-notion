@@ -23,7 +23,7 @@ public abstract class AbstractTask extends NotionConnection implements RunnableT
 
     @Schema(
         title = "Page ID",
-        description = "The unique identifier of the Notion page"
+        description = "Notion page identifier in UUID format; 32‑character hex is also accepted"
     )
     @NotNull
     protected Property<String> pageId;

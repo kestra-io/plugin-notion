@@ -22,7 +22,7 @@ import java.util.Map;
 @NoArgsConstructor
 @Schema(
     title = "Archive a Notion page",
-    description = "Archives an existing Notion page by ID. In Notion, pages are archived rather than permanently deleted, moving them to the trash."
+    description = "Sets `archived=true` on the target page so it moves to Notion trash without permanent deletion. Requires a valid page ID; content remains recoverable."
 )
 @Plugin(
     examples = {
