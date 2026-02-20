@@ -23,7 +23,7 @@ import java.util.Map;
 @NoArgsConstructor
 @Schema(
     title = "Read a Notion page",
-    description = "Retrieves an existing Notion page by ID and returns its content in markdown format along with metadata."
+    description = "Fetches a Notion page by ID, returning metadata and the page content rendered from blocks to markdown. Requires a valid page UUID."
 )
 @Plugin(
     examples = {

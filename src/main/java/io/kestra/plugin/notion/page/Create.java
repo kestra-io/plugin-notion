@@ -29,7 +29,7 @@ import java.util.*;
 @NoArgsConstructor
 @Schema(
     title = "Create a Notion page",
-    description = "Creates a new page in Notion with the specified title and markdown content. Optionally specify a parent page for hierarchical organization."
+    description = "Creates a Notion page with a title and optional markdown content. Defaults to the workspace root when parentPageId is empty; markdown is rendered to Notion blocks."
 )
 @Plugin(
     examples = {
@@ -86,20 +86,20 @@ public class Create extends NotionConnection implements RunnableTask<Create.Outp
 
     @Schema(
         title = "Page title",
-        description = "The title of the new page"
+        description = "Required page title text"
     )
     @NotNull
     private Property<String> title;
 
     @Schema(
         title = "Page content",
-        description = "The content of the page in markdown format"
+        description = "Optional markdown content converted to Notion blocks; empty leaves the page body blank"
     )
     private Property<String> content;
 
     @Schema(
         title = "Parent page ID",
-        description = "Optional parent page ID for creating a child page. If not specified, the page will be created at the workspace root."
+        description = "Optional parent page ID (UUID). When absent, the page is created at the workspace root"
     )
     private Property<String> parentPageId;
 
