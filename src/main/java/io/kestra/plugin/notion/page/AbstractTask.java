@@ -1,18 +1,19 @@
 package io.kestra.plugin.notion.page;
 
-import io.kestra.core.models.property.Property;
-import io.kestra.core.models.tasks.RunnableTask;
-import io.kestra.core.runners.RunContext;
-import io.kestra.plugin.notion.NotionConnection;
-import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotNull;
-import lombok.*;
-import lombok.experimental.SuperBuilder;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import io.kestra.core.models.property.Property;
+import io.kestra.core.models.tasks.RunnableTask;
+import io.kestra.core.runners.RunContext;
+import io.kestra.plugin.notion.NotionConnection;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @SuperBuilder
 @ToString
@@ -35,7 +36,7 @@ public abstract class AbstractTask extends NotionConnection implements RunnableT
     @Getter
     @NoArgsConstructor
     public static class Output implements io.kestra.core.models.tasks.Output {
-        
+
         @Schema(
             title = "Page ID",
             description = "The unique identifier of the page"
@@ -67,7 +68,7 @@ public abstract class AbstractTask extends NotionConnection implements RunnableT
         private Instant createdTime;
 
         @Schema(
-            title = "Last Edited Time", 
+            title = "Last Edited Time",
             description = "When the page was last edited"
         )
         private Instant lastEditedTime;
@@ -91,14 +92,14 @@ public abstract class AbstractTask extends NotionConnection implements RunnableT
         private String message;
 
         public Output(String pageId,
-                      String url,
-                      String title,
-                      String content,
-                      Instant createdTime,
-                      Instant lastEditedTime,
-                      Boolean archived,
-                      Map<String, Object> properties,
-                      String message) {
+            String url,
+            String title,
+            String content,
+            Instant createdTime,
+            Instant lastEditedTime,
+            Boolean archived,
+            Map<String, Object> properties,
+            String message) {
             this.pageId = pageId;
             this.url = url;
             this.title = title;
@@ -124,7 +125,7 @@ public abstract class AbstractTask extends NotionConnection implements RunnableT
         if (titleProp == null) {
             titleProp = (Map<String, Object>) properties.get("Name");
         }
-        
+
         if (titleProp != null && titleProp.get("title") instanceof List) {
             List<?> titleArray = (List<?>) titleProp.get("title");
             if (!titleArray.isEmpty() && titleArray.getFirst() instanceof Map) {
@@ -161,8 +162,6 @@ public abstract class AbstractTask extends NotionConnection implements RunnableT
         );
     }
 
-
-
     /**
      * Helper method to check if a string is a valid UUID
      */
@@ -182,11 +181,11 @@ public abstract class AbstractTask extends NotionConnection implements RunnableT
         if (hexString.length() != 32) {
             return hexString;
         }
-        return hexString.substring(0, 8) + "-" + 
-               hexString.substring(8, 12) + "-" + 
-               hexString.substring(12, 16) + "-" + 
-               hexString.substring(16, 20) + "-" + 
-               hexString.substring(20);
+        return hexString.substring(0, 8) + "-" +
+            hexString.substring(8, 12) + "-" +
+            hexString.substring(12, 16) + "-" +
+            hexString.substring(16, 20) + "-" +
+            hexString.substring(20);
     }
 
     /**
@@ -194,12 +193,12 @@ public abstract class AbstractTask extends NotionConnection implements RunnableT
      */
     protected String validateAndRenderPageId(RunContext runContext) throws Exception {
         String renderedPageId = runContext.render(this.pageId).as(String.class).orElseThrow();
-        
+
         // Check if it's already a valid UUID
         if (isUUID(renderedPageId)) {
             return renderedPageId;
         }
-        
+
         // Check if it's a 32-character hex string that can be formatted as UUID
         if (renderedPageId.matches("^[0-9a-f]{32}$")) {
             String formattedUUID = formatAsUUID(renderedPageId);
@@ -207,7 +206,7 @@ public abstract class AbstractTask extends NotionConnection implements RunnableT
                 return formattedUUID;
             }
         }
-        
+
         throw new IllegalArgumentException("pageId must be a valid Notion page ID (UUID format)");
     }
-} 
+}

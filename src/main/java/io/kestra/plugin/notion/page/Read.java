@@ -6,15 +6,13 @@ import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.notion.NotionResponse;
 import io.kestra.plugin.notion.utils.MarkdownConverter;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
-
-import java.util.List;
-import java.util.Map;
 
 @SuperBuilder
 @ToString
@@ -70,36 +68,34 @@ public class Read extends AbstractTask {
         try {
             // Validate and render page ID
             String renderedPageId = validateAndRenderPageId(runContext);
-            
+
             logger.info("Reading Notion page with ID: {}", renderedPageId);
 
             // Get page metadata
             String pageUrl = buildPageURL(renderedPageId);
             HttpRequest.HttpRequestBuilder pageRequestBuilder = buildGetRequest(runContext, pageUrl);
-            
+
             NotionResponse pageResponse = makeCall(runContext, pageRequestBuilder, NotionResponse.class);
-            
+
             // Get page content (blocks/children)
             String childrenUrl = buildPageChildrenURL(renderedPageId);
             HttpRequest.HttpRequestBuilder childrenRequestBuilder = buildGetRequest(runContext, childrenUrl);
-            
+
             NotionResponse childrenResponse = makeCall(runContext, childrenRequestBuilder, NotionResponse.class);
-            
+
             // Convert blocks to markdown
             String markdownContent = MarkdownConverter.blocksToMarkdown(mapper.valueToTree(childrenResponse.getChildren()));
-            
+
             return buildOutput(pageResponse, markdownContent, "Page read successfully");
-                
+
         } catch (Exception e) {
             logger.error("Error reading Notion page: {}", e.getMessage());
             throw e;
         }
     }
 
-
-
     @Override
     protected String getEndpoint() {
         return PAGES_ENDPOINT;
     }
-} 
+}

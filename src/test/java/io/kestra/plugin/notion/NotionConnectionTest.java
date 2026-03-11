@@ -1,10 +1,12 @@
 package io.kestra.plugin.notion;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import io.kestra.core.models.property.Property;
+
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -118,10 +120,14 @@ class NotionConnectionTest {
         String pageIdWithDashes = "01234567-89ab-cdef-0123-456789abcdef";
         String blockIdWithSpecialChars = "block_123_test";
 
-        assertThat(connection.buildPageURL(pageIdWithDashes),
-            equalTo("https://api.notion.com/v1/pages/" + pageIdWithDashes));
-        assertThat(connection.buildBlockURL(blockIdWithSpecialChars),
-            equalTo("https://api.notion.com/v1/blocks/" + blockIdWithSpecialChars));
+        assertThat(
+            connection.buildPageURL(pageIdWithDashes),
+            equalTo("https://api.notion.com/v1/pages/" + pageIdWithDashes)
+        );
+        assertThat(
+            connection.buildBlockURL(blockIdWithSpecialChars),
+            equalTo("https://api.notion.com/v1/blocks/" + blockIdWithSpecialChars)
+        );
     }
 
     @Test

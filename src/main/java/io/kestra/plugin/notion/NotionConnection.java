@@ -1,6 +1,15 @@
 package io.kestra.plugin.notion;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.kestra.core.exceptions.IllegalVariableEvaluationException;
 import io.kestra.core.http.HttpRequest;
 import io.kestra.core.http.HttpResponse;
@@ -12,6 +21,7 @@ import io.kestra.core.models.tasks.Task;
 import io.kestra.core.runners.RunContext;
 import io.kestra.core.serializers.FileSerde;
 import io.kestra.core.serializers.JacksonMapper;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -19,14 +29,6 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import reactor.core.publisher.Flux;
-
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.net.URI;
-import java.util.List;
-import java.util.Map;
 
 @SuperBuilder
 @ToString
@@ -40,7 +42,7 @@ public abstract class NotionConnection extends Task {
     public static final String NOTION_API_URL = "https://api.notion.com";
 
     public static final String NOTION_API_VERSION = "2022-06-28";
-    
+
     /**
      * Gets the base URL for Notion API, allowing override for testing
      */
@@ -75,7 +77,7 @@ public abstract class NotionConnection extends Task {
         try (HttpClient client = new HttpClient(runContext, options)) {
             HttpRequest request = requestBuilder.build();
             HttpResponse<T> response = client.request(request, responseType);
-            
+
             return response.getBody();
         } catch (Exception e) {
             logger.error("Error making request to Notion API: {}", e.getMessage());
@@ -83,14 +85,12 @@ public abstract class NotionConnection extends Task {
         }
     }
 
-
-
     /**
      * Adds authentication and required headers to the HTTP request
      */
     public void getAuthorizedRequest(
-            RunContext runContext,
-            HttpRequest.HttpRequestBuilder requestBuilder) throws IllegalVariableEvaluationException {
+        RunContext runContext,
+        HttpRequest.HttpRequestBuilder requestBuilder) throws IllegalVariableEvaluationException {
 
         var apiTokenRendered = runContext.render(this.apiToken).as(String.class);
 
@@ -153,7 +153,7 @@ public abstract class NotionConnection extends Task {
         HttpRequest.HttpRequestBuilder requestBuilder = HttpRequest.builder()
             .uri(URI.create(url))
             .method("GET");
-        
+
         getAuthorizedRequest(runContext, requestBuilder);
         return requestBuilder;
     }
@@ -163,12 +163,12 @@ public abstract class NotionConnection extends Task {
      */
     protected HttpRequest.HttpRequestBuilder buildPostRequest(RunContext runContext, String url, Object body) throws Exception {
         String jsonBody = mapper.writeValueAsString(body);
-        
+
         HttpRequest.HttpRequestBuilder requestBuilder = HttpRequest.builder()
             .uri(URI.create(url))
             .method("POST")
             .body(HttpRequest.StringRequestBody.builder().content(jsonBody).build());
-        
+
         getAuthorizedRequest(runContext, requestBuilder);
         return requestBuilder;
     }
@@ -178,12 +178,12 @@ public abstract class NotionConnection extends Task {
      */
     protected HttpRequest.HttpRequestBuilder buildPatchRequest(RunContext runContext, String url, Object body) throws Exception {
         String jsonBody = mapper.writeValueAsString(body);
-        
+
         HttpRequest.HttpRequestBuilder requestBuilder = HttpRequest.builder()
             .uri(URI.create(url))
             .method("PATCH")
             .body(HttpRequest.StringRequestBody.builder().content(jsonBody).build());
-        
+
         getAuthorizedRequest(runContext, requestBuilder);
         return requestBuilder;
     }
@@ -195,7 +195,7 @@ public abstract class NotionConnection extends Task {
         HttpRequest.HttpRequestBuilder requestBuilder = HttpRequest.builder()
             .uri(URI.create(url))
             .method("DELETE");
-        
+
         getAuthorizedRequest(runContext, requestBuilder);
         return requestBuilder;
     }
@@ -218,4 +218,4 @@ public abstract class NotionConnection extends Task {
      * Must be implemented by concrete classes
      */
     protected abstract String getEndpoint();
-} 
+}

@@ -1,5 +1,8 @@
 package io.kestra.plugin.notion.page;
 
+import java.time.Instant;
+import java.util.*;
+
 import io.kestra.core.http.HttpRequest;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
@@ -9,6 +12,7 @@ import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.notion.NotionConnection;
 import io.kestra.plugin.notion.NotionResponse;
 import io.kestra.plugin.notion.utils.MarkdownConverter;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
@@ -17,10 +21,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
-
-import java.net.URI;
-import java.time.Instant;
-import java.util.*;
 
 @SuperBuilder
 @ToString
@@ -47,11 +47,11 @@ import java.util.*;
                     title: "Meeting Notes"
                     content: |
                       # Meeting Notes - {{ now() }}
-                      
+
                       ## Attendees
                       - John Doe
                       - Jane Smith
-                      
+
                       ## Action Items
                       - [ ] Review proposal
                       - [ ] Schedule follow-up
@@ -72,9 +72,9 @@ import java.util.*;
                     parentPageId: "12345678-1234-1234-1234-123456789abc"
                     content: |
                       # Sprint Planning
-                      
+
                       **Sprint Goal:** Improve user authentication
-                      
+
                       ## Stories
                       - Implement OAuth2
                       - Add password reset
@@ -117,8 +117,10 @@ public class Create extends NotionConnection implements RunnableTask<Create.Outp
         String renderedParentPageId = runContext.render(this.parentPageId).as(String.class).orElse(null);
         if (renderedParentPageId != null && !renderedParentPageId.isEmpty()) {
             // Validate parent page ID format
-            if (!renderedParentPageId.matches("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$") && 
-                !renderedParentPageId.matches("^[0-9a-f]{32}$")) {
+            if (
+                !renderedParentPageId.matches("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$") &&
+                    !renderedParentPageId.matches("^[0-9a-f]{32}$")
+            ) {
                 throw new IllegalArgumentException("parentPageId must be a valid Notion page ID (UUID format)");
             }
         }
@@ -168,10 +170,14 @@ public class Create extends NotionConnection implements RunnableTask<Create.Outp
         // Set page properties (title)
         Map<String, Object> properties = new HashMap<>();
         Map<String, Object> titleProperty = new HashMap<>();
-        titleProperty.put("title", List.of(Map.of(
-            "type", "text",
-            "text", Map.of("content", title)
-        )));
+        titleProperty.put(
+            "title", List.of(
+                Map.of(
+                    "type", "text",
+                    "text", Map.of("content", title)
+                )
+            )
+        );
         properties.put("title", titleProperty);
         requestBody.put("properties", properties);
 
@@ -182,8 +188,6 @@ public class Create extends NotionConnection implements RunnableTask<Create.Outp
 
         return requestBody;
     }
-
-
 
     @Override
     protected String getEndpoint() {
@@ -196,7 +200,7 @@ public class Create extends NotionConnection implements RunnableTask<Create.Outp
     @Getter
     @Builder
     public static class Output implements io.kestra.core.models.tasks.Output {
-        
+
         @Schema(
             title = "Page ID",
             description = "The unique identifier of the created page"
@@ -251,4 +255,4 @@ public class Create extends NotionConnection implements RunnableTask<Create.Outp
         )
         private String message;
     }
-} 
+}

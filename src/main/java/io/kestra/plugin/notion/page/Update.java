@@ -1,5 +1,9 @@
 package io.kestra.plugin.notion.page;
 
+import java.util.*;
+
+import com.fasterxml.jackson.databind.node.ArrayNode;
+
 import io.kestra.core.http.HttpRequest;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
@@ -7,15 +11,13 @@ import io.kestra.core.models.property.Property;
 import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.notion.NotionResponse;
 import io.kestra.plugin.notion.utils.MarkdownConverter;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-
-import java.util.*;
 
 @SuperBuilder
 @ToString
@@ -42,9 +44,9 @@ import java.util.*;
                     pageId: "12345678-1234-1234-1234-123456789abc"
                     content: |
                       # Updated Content
-                      
+
                       This page has been updated with new content.
-                      
+
                       ## New Section
                       - Updated item 1
                       - Updated item 2
@@ -65,13 +67,13 @@ import java.util.*;
                     title: "Updated Meeting Notes"
                     content: |
                       # Meeting Summary - Updated
-                      
+
                       **Date:** {{ now() }}
-                      
+
                       ## Key Decisions
                       - Decision 1
                       - Decision 2
-                      
+
                       ## Next Steps
                       - [ ] Action item 1
                       - [ ] Action item 2
@@ -100,25 +102,25 @@ public class Update extends AbstractTask {
         try {
             // Validate and render page ID
             String renderedPageId = validateAndRenderPageId(runContext);
-            
+
             // Render optional inputs
             String renderedTitle = null;
             if (this.title != null) {
                 renderedTitle = runContext.render(this.title).as(String.class).orElse(null);
             }
-            
+
             String renderedContent = runContext.render(this.content).as(String.class).orElse("");
-            
+
             // Validate that at least one field is provided for update
             boolean hasTitle = renderedTitle != null && !renderedTitle.trim().isEmpty();
             boolean hasContent = renderedContent != null && !renderedContent.trim().isEmpty();
-            
+
             if (!hasTitle && !hasContent) {
                 throw new IllegalArgumentException("At least one of 'title' or 'content' must be provided for update operation");
             }
-            
+
             logger.info("Updating Notion page with ID: {}", renderedPageId);
-            
+
             // Step 1: Update page properties (title) if provided
             NotionResponse pageResponse = null;
             if (renderedTitle != null && !renderedTitle.trim().isEmpty()) {
@@ -130,7 +132,7 @@ public class Update extends AbstractTask {
                 HttpRequest.HttpRequestBuilder pageRequestBuilder = buildGetRequest(runContext, pageUrl);
                 pageResponse = makeCall(runContext, pageRequestBuilder, NotionResponse.class);
             }
-            
+
             // Step 2: Append page content to the bottom
             if (renderedContent != null && !renderedContent.trim().isEmpty()) {
                 appendPageContent(runContext, renderedPageId, renderedContent);
@@ -138,15 +140,15 @@ public class Update extends AbstractTask {
             } else {
                 logger.info("No content provided, skipping content update");
             }
-            
+
             // Get updated page info
             String pageUrl = buildPageURL(renderedPageId);
             HttpRequest.HttpRequestBuilder pageRequestBuilder = buildGetRequest(runContext, pageUrl);
             NotionResponse finalPageResponse = makeCall(runContext, pageRequestBuilder, NotionResponse.class);
-            
+
             // Store detailed information
             return buildOutput(finalPageResponse, renderedContent, "Page updated successfully");
-                
+
         } catch (Exception e) {
             logger.error("Error updating Notion page: {}", e.getMessage());
             throw e;
@@ -158,21 +160,25 @@ public class Update extends AbstractTask {
      */
     private NotionResponse updatePageTitle(RunContext runContext, String pageId, String newTitle) throws Exception {
         Map<String, Object> requestBody = new HashMap<>();
-        
+
         // Set page properties (title)
         Map<String, Object> properties = new HashMap<>();
         Map<String, Object> titleProperty = new HashMap<>();
-        titleProperty.put("title", List.of(Map.of(
-            "type", "text",
-            "text", Map.of("content", newTitle)
-        )));
+        titleProperty.put(
+            "title", List.of(
+                Map.of(
+                    "type", "text",
+                    "text", Map.of("content", newTitle)
+                )
+            )
+        );
         properties.put("title", titleProperty);
         requestBody.put("properties", properties);
-        
+
         // Make PATCH request to update page properties
         String url = buildPageURL(pageId);
         HttpRequest.HttpRequestBuilder requestBuilder = buildPatchRequest(runContext, url, requestBody);
-        
+
         return makeCall(runContext, requestBuilder, NotionResponse.class);
     }
 
@@ -194,17 +200,15 @@ public class Update extends AbstractTask {
      */
     protected void addBlocksToPage(RunContext runContext, String pageId, ArrayNode blocks) throws Exception {
         Map<String, Object> requestBody = Map.of("children", blocks);
-        
+
         String url = buildPageChildrenURL(pageId);
         HttpRequest.HttpRequestBuilder requestBuilder = buildPatchRequest(runContext, url, requestBody);
-        
+
         makeCall(runContext, requestBuilder, NotionResponse.class);
     }
-
-
 
     @Override
     protected String getEndpoint() {
         return PAGES_ENDPOINT;
     }
-} 
+}

@@ -1,25 +1,28 @@
 package io.kestra.plugin.notion.page;
 
-import io.kestra.core.junit.annotations.KestraTest;
-import io.kestra.core.models.property.Property;
-import io.kestra.core.runners.RunContext;
-import io.kestra.core.runners.RunContextFactory;
-import io.kestra.core.serializers.JacksonMapper;
-import io.kestra.plugin.notion.utils.MarkdownConverter;
-import jakarta.inject.Inject;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.junit.jupiter.api.Test;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
-import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import io.kestra.core.junit.annotations.KestraTest;
+import io.kestra.core.models.property.Property;
+import io.kestra.core.runners.RunContext;
+import io.kestra.core.runners.RunContextFactory;
+import io.kestra.core.serializers.JacksonMapper;
+import io.kestra.plugin.notion.utils.MarkdownConverter;
+
+import jakarta.inject.Inject;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
@@ -218,47 +221,67 @@ class UpdateTest {
         try {
             configureFor("localhost", wireMockServer.port());
 
-            wireMockServer.stubFor(post(urlEqualTo("/v1/pages"))
-                .willReturn(aResponse()
-                    .withHeader("Content-Type", "application/json")
-                    .withBody(pageResponseJson(pageId, title))
-                    .withStatus(200)));
+            wireMockServer.stubFor(
+                post(urlEqualTo("/v1/pages"))
+                    .willReturn(
+                        aResponse()
+                            .withHeader("Content-Type", "application/json")
+                            .withBody(pageResponseJson(pageId, title))
+                            .withStatus(200)
+                    )
+            );
 
-            wireMockServer.stubFor(get(urlEqualTo("/v1/pages/" + pageId))
-                .willReturn(aResponse()
-                    .withHeader("Content-Type", "application/json")
-                    .withBody(pageResponseJson(pageId, title))
-                    .withStatus(200)));
+            wireMockServer.stubFor(
+                get(urlEqualTo("/v1/pages/" + pageId))
+                    .willReturn(
+                        aResponse()
+                            .withHeader("Content-Type", "application/json")
+                            .withBody(pageResponseJson(pageId, title))
+                            .withStatus(200)
+                    )
+            );
 
             ArrayNode initialBlocks = ensurePlainText(MarkdownConverter.markdownToBlocks(initialContent));
             ArrayNode appendedBlocks = ensurePlainText(MarkdownConverter.markdownToBlocks(appendedContent));
             ArrayNode combinedBlocks = initialBlocks.deepCopy();
             combinedBlocks.addAll(appendedBlocks);
 
-            wireMockServer.stubFor(get(urlEqualTo("/v1/blocks/" + pageId + "/children"))
-                .inScenario("page-content")
-                .whenScenarioStateIs(STARTED)
-                .willReturn(aResponse()
-                    .withHeader("Content-Type", "application/json")
-                    .withBody(childrenResponseJson(initialBlocks))
-                    .withStatus(200)));
+            wireMockServer.stubFor(
+                get(urlEqualTo("/v1/blocks/" + pageId + "/children"))
+                    .inScenario("page-content")
+                    .whenScenarioStateIs(STARTED)
+                    .willReturn(
+                        aResponse()
+                            .withHeader("Content-Type", "application/json")
+                            .withBody(childrenResponseJson(initialBlocks))
+                            .withStatus(200)
+                    )
+            );
 
-            wireMockServer.stubFor(patch(urlEqualTo("/v1/blocks/" + pageId + "/children"))
-                .inScenario("page-content")
-                .whenScenarioStateIs(STARTED)
-                .willReturn(aResponse()
-                    .withHeader("Content-Type", "application/json")
-                    .withBody("{\"object\":\"list\",\"results\":[]}")
-                    .withStatus(200))
-                .willSetStateTo("appended"));
+            wireMockServer.stubFor(
+                patch(urlEqualTo("/v1/blocks/" + pageId + "/children"))
+                    .inScenario("page-content")
+                    .whenScenarioStateIs(STARTED)
+                    .willReturn(
+                        aResponse()
+                            .withHeader("Content-Type", "application/json")
+                            .withBody("{\"object\":\"list\",\"results\":[]}")
+                            .withStatus(200)
+                    )
+                    .willSetStateTo("appended")
+            );
 
-            wireMockServer.stubFor(get(urlEqualTo("/v1/blocks/" + pageId + "/children"))
-                .inScenario("page-content")
-                .whenScenarioStateIs("appended")
-                .willReturn(aResponse()
-                    .withHeader("Content-Type", "application/json")
-                    .withBody(childrenResponseJson(combinedBlocks))
-                    .withStatus(200)));
+            wireMockServer.stubFor(
+                get(urlEqualTo("/v1/blocks/" + pageId + "/children"))
+                    .inScenario("page-content")
+                    .whenScenarioStateIs("appended")
+                    .willReturn(
+                        aResponse()
+                            .withHeader("Content-Type", "application/json")
+                            .withBody(childrenResponseJson(combinedBlocks))
+                            .withStatus(200)
+                    )
+            );
 
             // 1) Create
             Create create = Create.builder()

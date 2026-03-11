@@ -1,19 +1,19 @@
 package io.kestra.plugin.notion.page;
 
+import java.util.Map;
+
 import io.kestra.core.http.HttpRequest;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.notion.NotionResponse;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
-
-import java.util.List;
-import java.util.Map;
 
 @SuperBuilder
 @ToString
@@ -69,39 +69,39 @@ public class Archive extends AbstractTask {
         try {
             // Validate and render page ID
             String renderedPageId = validateAndRenderPageId(runContext);
-            
+
             logger.info("Archiving Notion page with ID: {}", renderedPageId);
 
             // Get page info before archiving for confirmation
             String pageUrl = buildPageURL(renderedPageId);
             HttpRequest.HttpRequestBuilder pageRequestBuilder = buildGetRequest(runContext, pageUrl);
-            
+
             NotionResponse pageInfoResponse = makeCall(runContext, pageRequestBuilder, NotionResponse.class);
             String pageTitle = extractPageTitle(pageInfoResponse.getProperties());
             String pageUrlValue = pageInfoResponse.getUrl();
-            
+
             logger.info("Found page '{}' at URL: {}", pageTitle, pageUrlValue);
-            
+
             // Check if page is already archived
             if (Boolean.TRUE.equals(pageInfoResponse.getArchived())) {
                 logger.warn("Page '{}' is already archived", pageTitle);
-                
+
                 return buildOutput(pageInfoResponse, null, "Page was already archived");
             }
-            
+
             // Archive the page by setting archived = true
             Map<String, Object> requestBody = Map.of("archived", true);
-            
+
             HttpRequest.HttpRequestBuilder archiveRequestBuilder = buildPatchRequest(runContext, pageUrl, requestBody);
-            
+
             logger.debug("Archiving page with request body: {}", mapper.writeValueAsString(requestBody));
-            
+
             NotionResponse archiveResponse = makeCall(runContext, archiveRequestBuilder, NotionResponse.class);
-            
+
             logger.info("Successfully archived page '{}' (ID: {})", pageTitle, renderedPageId);
-            
+
             return buildOutput(archiveResponse, null, "Page archived successfully");
-                
+
         } catch (Exception e) {
             logger.error("Error archiving Notion page: {}", e.getMessage());
             throw e;
@@ -112,4 +112,4 @@ public class Archive extends AbstractTask {
     protected String getEndpoint() {
         return PAGES_ENDPOINT;
     }
-} 
+}

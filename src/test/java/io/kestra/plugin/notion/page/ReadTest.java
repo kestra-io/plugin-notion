@@ -1,9 +1,10 @@
 package io.kestra.plugin.notion.page;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import io.kestra.core.models.property.Property;
 import io.kestra.plugin.notion.NotionConnection;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;

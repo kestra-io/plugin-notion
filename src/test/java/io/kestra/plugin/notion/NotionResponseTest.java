@@ -1,7 +1,8 @@
 package io.kestra.plugin.notion;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -12,9 +13,9 @@ class NotionResponseTest {
     void testResultsMappingToChildren() throws Exception {
         String json = "{" +
             "\"results\":[{" +
-                "\"id\":\"block-1\"," +
-                "\"type\":\"paragraph\"," +
-                "\"paragraph\":{\"rich_text\":[{\"plain_text\":\"Hello\"}]}" +
+            "\"id\":\"block-1\"," +
+            "\"type\":\"paragraph\"," +
+            "\"paragraph\":{\"rich_text\":[{\"plain_text\":\"Hello\"}]}" +
             "}]," +
             "\"has_more\":false," +
             "\"next_cursor\":null" +
