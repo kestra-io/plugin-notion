@@ -1,8 +1,8 @@
 group: io.kestra.plugin.notion
 name: "notion"
 title: "Notion"
-description: "Tasks that create, read, update, and archive Notion pages."
-body: "Provide a Notion integration token and page/database IDs to create pages from markdown/blocks, read or update content, and archive pages, returning API payloads for documentation workflows."
+description: "Tasks that create, read, update, and archive Notion pages, and query and manage Notion database items."
+body: "Provide a Notion integration token and page/database IDs to create pages from markdown/blocks, read or update content, archive pages, query databases, and create or update database items."
 videos: []
 createdBy: "Kestra Core Team"
 managedBy: "Kestra Core Team"

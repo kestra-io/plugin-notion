@@ -1,0 +1,8 @@
+group: io.kestra.plugin.notion.database
+name: "database"
+title: "Notion Database"
+description: "Tasks that query and manage items in Notion databases."
+body: "Use a Notion integration token and database IDs to query database rows, create new items with typed properties, and update or archive existing items."
+videos: []
+createdBy: "Kestra Core Team"
+managedBy: "Kestra Core Team"
