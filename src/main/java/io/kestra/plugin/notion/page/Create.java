@@ -93,7 +93,9 @@ public class Create extends NotionConnection implements RunnableTask<Create.Outp
 
     @Schema(
         title = "Page content",
-        description = "Optional markdown content converted to Notion blocks; empty leaves the page body blank"
+        description = """
+            Optional markdown content converted to Notion blocks; empty leaves the page body blank.
+            Note that the Notion API enforces a limit of 2000 characters per [rich text content block](https://developers.notion.com/reference/request-limits)."""
     )
     private Property<String> content;
 

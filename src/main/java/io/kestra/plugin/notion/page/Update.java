@@ -91,7 +91,9 @@ public class Update extends AbstractTask {
 
     @Schema(
         title = "New page content",
-        description = "The new content for the page in markdown format. This will be appended to the bottom of the page."
+        description = """
+            The new content for the page in markdown format. This will be appended to the bottom of the page.
+            Note that the Notion API enforces a limit of 2000 characters per [rich text content block](https://developers.notion.com/reference/request-limits)."""
     )
     private Property<String> content;
 
