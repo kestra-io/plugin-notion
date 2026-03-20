@@ -1,15 +1,15 @@
 package io.kestra.plugin.notion.database;
 
-import java.util.ArrayList;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.kestra.core.http.HttpRequest;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
+import io.kestra.core.models.tasks.common.FetchType;
 import io.kestra.core.runners.RunContext;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -34,7 +34,7 @@ import lombok.experimental.SuperBuilder;
 @Plugin(
     examples = {
         @Example(
-            title = "Query a database with a filter",
+            title = "Query a database and store results in internal storage",
             full = true,
             code = """
                 id: notion_query_database
@@ -53,6 +53,22 @@ import lombok.experimental.SuperBuilder;
                       - property: "Created"
                         direction: "descending"
                     pageSize: 50
+                    fetchType: STORE
+                """
+        ),
+        @Example(
+            title = "Query a database and fetch all rows inline",
+            full = true,
+            code = """
+                id: notion_query_database_fetch
+                namespace: company.team
+
+                tasks:
+                  - id: query_db
+                    type: io.kestra.plugin.notion.database.Query
+                    apiToken: "{{ secret('NOTION_API_TOKEN') }}"
+                    databaseId: "12345678-1234-1234-1234-123456789abc"
+                    fetchType: FETCH
                 """
         )
     }
@@ -87,6 +103,18 @@ public class Query extends AbstractDatabaseTask implements RunnableTask<Query.Ou
         description = "Pagination cursor returned by a previous query to fetch the next page of results."
     )
     private Property<String> startCursor;
+
+    @Builder.Default
+    @Schema(
+        title = "Fetch type",
+        description = """
+            Controls how query results are delivered.
+            `STORE` writes rows to Kestra's internal storage and returns a URI (best for large datasets).
+            `FETCH` returns all rows directly in the output.
+            `FETCH_ONE` returns only the first row.
+            `NONE` skips returning row data entirely."""
+    )
+    private Property<FetchType> fetchType = Property.ofValue(FetchType.STORE);
 
     @Override
     public Output run(RunContext runContext) throws Exception {
@@ -131,12 +159,31 @@ public class Query extends AbstractDatabaseTask implements RunnableTask<Query.Ou
 
         logger.info("Query returned {} rows (hasMore={})", results.size(), hasMore);
 
-        return Output.builder()
-            .rows(results)
-            .total(results.size())
+        var rFetchType = runContext.render(this.fetchType).as(FetchType.class).orElse(FetchType.STORE);
+
+        var outputBuilder = Output.builder()
+            .size(results.size())
             .hasMore(hasMore)
-            .nextCursor(nextCursor)
-            .build();
+            .nextCursor(nextCursor);
+
+        switch (rFetchType) {
+            case STORE -> {
+                var uri = store(runContext, results);
+                logger.debug("Stored {} rows to internal storage: {}", results.size(), uri);
+                outputBuilder.uri(uri);
+            }
+            case FETCH -> outputBuilder.rows(results);
+            case FETCH_ONE -> {
+                if (!results.isEmpty()) {
+                    outputBuilder.row(results.getFirst());
+                }
+            }
+            case NONE -> {
+                // No row data in output
+            }
+        }
+
+        return outputBuilder.build();
     }
 
     @Getter
@@ -145,15 +192,33 @@ public class Query extends AbstractDatabaseTask implements RunnableTask<Query.Ou
 
         @Schema(
             title = "Rows",
-            description = "List of raw Notion page objects matching the query."
+            description = """
+                List of raw Notion page objects matching the query.
+                Only populated when `fetchType` is `FETCH`."""
         )
         private List<Map<String, Object>> rows;
 
         @Schema(
-            title = "Total",
+            title = "Row",
+            description = """
+                The first raw Notion page object matching the query.
+                Only populated when `fetchType` is `FETCH_ONE`."""
+        )
+        private Map<String, Object> row;
+
+        @Schema(
+            title = "URI",
+            description = """
+                Internal storage URI containing the query results in Ion format.
+                Only populated when `fetchType` is `STORE`."""
+        )
+        private URI uri;
+
+        @Schema(
+            title = "Size",
             description = "Number of rows returned in this page of results."
         )
-        private Integer total;
+        private Integer size;
 
         @Schema(
             title = "Has more",
