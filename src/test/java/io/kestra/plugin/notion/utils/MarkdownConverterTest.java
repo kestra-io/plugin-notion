@@ -327,6 +327,79 @@ class MarkdownConverterTest {
     }
 
     // =========================
+    // Markdown Link Parsing Tests
+    // =========================
+
+    @Test
+    void testMarkdownLinkInParagraph() {
+        var markdown = "Check out [Kestra](https://kestra.io) for orchestration.";
+        var result = MarkdownConverter.markdownToBlocks(markdown);
+
+        assertThat(result.size(), equalTo(1));
+
+        var richText = result.get(0).path("paragraph").path("rich_text");
+        assertThat(richText.size(), equalTo(3));
+
+        // Plain text before link
+        var before = richText.get(0);
+        assertThat(before.path("text").path("content").asText(), equalTo("Check out "));
+        assertThat(before.path("text").has("link"), equalTo(false));
+        assertThat(before.has("href"), equalTo(false));
+
+        // Link segment
+        var link = richText.get(1);
+        assertThat(link.path("text").path("content").asText(), equalTo("Kestra"));
+        assertThat(link.path("text").path("link").path("url").asText(), equalTo("https://kestra.io"));
+        assertThat(link.path("href").asText(), equalTo("https://kestra.io"));
+
+        // Plain text after link
+        var after = richText.get(2);
+        assertThat(after.path("text").path("content").asText(), equalTo(" for orchestration."));
+        assertThat(after.path("text").has("link"), equalTo(false));
+    }
+
+    @Test
+    void testMarkdownMultipleLinks() {
+        var markdown = "[A](https://a.com) and [B](https://b.com)";
+        var result = MarkdownConverter.markdownToBlocks(markdown);
+
+        var richText = result.get(0).path("paragraph").path("rich_text");
+        assertThat(richText.size(), equalTo(3));
+
+        assertThat(richText.get(0).path("text").path("content").asText(), equalTo("A"));
+        assertThat(richText.get(0).path("href").asText(), equalTo("https://a.com"));
+
+        assertThat(richText.get(1).path("text").path("content").asText(), equalTo(" and "));
+
+        assertThat(richText.get(2).path("text").path("content").asText(), equalTo("B"));
+        assertThat(richText.get(2).path("href").asText(), equalTo("https://b.com"));
+    }
+
+    @Test
+    void testMarkdownLinkOnly() {
+        var markdown = "[Docs](https://docs.example.com)";
+        var result = MarkdownConverter.markdownToBlocks(markdown);
+
+        var richText = result.get(0).path("paragraph").path("rich_text");
+        assertThat(richText.size(), equalTo(1));
+
+        var link = richText.get(0);
+        assertThat(link.path("text").path("content").asText(), equalTo("Docs"));
+        assertThat(link.path("text").path("link").path("url").asText(), equalTo("https://docs.example.com"));
+        assertThat(link.path("href").asText(), equalTo("https://docs.example.com"));
+    }
+
+    @Test
+    void testMarkdownNoLinks() {
+        var markdown = "Plain text without any links.";
+        var result = MarkdownConverter.markdownToBlocks(markdown);
+
+        var richText = result.get(0).path("paragraph").path("rich_text");
+        assertThat(richText.size(), equalTo(1));
+        assertThat(richText.get(0).path("text").path("content").asText(), equalTo("Plain text without any links."));
+    }
+
+    // =========================
     // Edge Cases and Error Handling
     // =========================
 

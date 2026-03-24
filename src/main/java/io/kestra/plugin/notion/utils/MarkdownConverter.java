@@ -1,6 +1,7 @@
 package io.kestra.plugin.notion.utils;
 
 import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
@@ -335,33 +336,69 @@ public class MarkdownConverter {
      * Create rich text array from markdown text with basic formatting
      */
     private static ArrayNode createRichTextFromMarkdown(String text) {
-        ArrayNode richText = mapper.createArrayNode();
+        var richText = mapper.createArrayNode();
 
         if (text == null || text.isEmpty()) {
             return richText;
         }
 
-        // For now, create simple rich text without parsing inline formatting
-        // This can be enhanced later to handle bold, italic, links, etc.
-        ObjectNode richTextItem = mapper.createObjectNode();
-        richTextItem.put("type", "text");
+        var matcher = LINK_PATTERN.matcher(text);
+        var lastEnd = 0;
 
-        ObjectNode textObject = mapper.createObjectNode();
-        textObject.put("content", text);
-        richTextItem.set("text", textObject);
+        while (matcher.find()) {
+            if (matcher.start() > lastEnd) {
+                richText.add(createPlainRichTextItem(text.substring(lastEnd, matcher.start())));
+            }
+            var linkText = matcher.group(1);
+            var linkUrl = matcher.group(2);
+            richText.add(createLinkRichTextItem(linkText, linkUrl));
+            lastEnd = matcher.end();
+        }
 
-        ObjectNode annotations = mapper.createObjectNode();
+        if (lastEnd < text.length()) {
+            richText.add(createPlainRichTextItem(text.substring(lastEnd)));
+        }
+
+        return richText;
+    }
+
+    private static ObjectNode createPlainRichTextItem(String content) {
+        var item = mapper.createObjectNode();
+        item.put("type", "text");
+
+        var textObject = mapper.createObjectNode();
+        textObject.put("content", content);
+        item.set("text", textObject);
+
+        item.set("annotations", createDefaultAnnotations());
+        return item;
+    }
+
+    private static ObjectNode createLinkRichTextItem(String content, String url) {
+        var item = mapper.createObjectNode();
+        item.put("type", "text");
+
+        var textObject = mapper.createObjectNode();
+        textObject.put("content", content);
+        var linkObject = mapper.createObjectNode();
+        linkObject.put("url", url);
+        textObject.set("link", linkObject);
+        item.set("text", textObject);
+
+        item.put("href", url);
+        item.set("annotations", createDefaultAnnotations());
+        return item;
+    }
+
+    private static ObjectNode createDefaultAnnotations() {
+        var annotations = mapper.createObjectNode();
         annotations.put("bold", false);
         annotations.put("italic", false);
         annotations.put("strikethrough", false);
         annotations.put("underline", false);
         annotations.put("code", false);
         annotations.put("color", "default");
-        richTextItem.set("annotations", annotations);
-
-        richText.add(richTextItem);
-
-        return richText;
+        return annotations;
     }
 
     /**
