@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
@@ -103,9 +104,14 @@ public class CreateItem extends AbstractDatabaseTask implements RunnableTask<Cre
         // Parent: database
         body.put("parent", Map.of("database_id", rDatabaseId));
 
-        // Properties
+        // Properties — coerce string "true"/"false" to Boolean so that Notion checkbox
+        // properties rendered from Pebble expressions are sent as JSON booleans, not strings.
         var rProperties = new HashMap<String, Object>(
-            runContext.render(this.properties).asMap(String.class, Object.class)
+            runContext.render(this.properties).asMap(String.class, Object.class).entrySet().stream()
+                .collect(Collectors.toMap(
+                    Map.Entry::getKey,
+                    e -> coerceBooleans(e.getValue())
+                ))
         );
 
         // Set title property (Notion databases use a "title" typed property, usually named "Name")

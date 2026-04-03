@@ -13,6 +13,9 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @SuperBuilder
@@ -86,5 +89,33 @@ public abstract class AbstractDatabaseTask extends NotionConnection {
     @Override
     protected String getEndpoint() {
         return DATABASES_ENDPOINT;
+    }
+
+    /**
+     * Recursively walks a rendered value and coerces string literals "true"/"false" to their
+     * Boolean equivalents. This is needed because Pebble expressions inside quoted YAML strings
+     * (e.g. {@code checkbox: "{{ myVar }}"}) are always rendered as Strings by Kestra, even when
+     * the underlying value is a boolean. The Notion API strictly expects JSON booleans, not strings,
+     * for checkbox and similar boolean-typed properties.
+     */
+    @SuppressWarnings("unchecked")
+    protected static Object coerceBooleans(Object value) {
+        if (value instanceof Map<?, ?> map) {
+            var result = new LinkedHashMap<String, Object>(map.size());
+            for (var entry : map.entrySet()) {
+                result.put((String) entry.getKey(), coerceBooleans(entry.getValue()));
+            }
+            return result;
+        }
+        if (value instanceof List<?> list) {
+            return list.stream().map(AbstractDatabaseTask::coerceBooleans).toList();
+        }
+        if ("true".equals(value)) {
+            return Boolean.TRUE;
+        }
+        if ("false".equals(value)) {
+            return Boolean.FALSE;
+        }
+        return value;
     }
 }
