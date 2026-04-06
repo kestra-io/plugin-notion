@@ -19,6 +19,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
+import io.kestra.core.models.annotations.PluginProperty;
 
 @SuperBuilder
 @ToString
@@ -81,6 +82,7 @@ public class Query extends AbstractDatabaseTask implements RunnableTask<Query.Ou
             A Notion filter object applied to the query.
             See the [Notion API filter reference](https://developers.notion.com/reference/post-database-query-filter) for the full schema."""
     )
+    @PluginProperty(group = "processing")
     private Property<Map<String, Object>> filter;
 
     @Schema(
@@ -89,6 +91,7 @@ public class Query extends AbstractDatabaseTask implements RunnableTask<Query.Ou
             A list of sort objects controlling result ordering.
             Each entry must have a `property` and a `direction` (`ascending` or `descending`)."""
     )
+    @PluginProperty(group = "advanced")
     private Property<List<Map<String, Object>>> sorts;
 
     @Builder.Default
@@ -96,12 +99,14 @@ public class Query extends AbstractDatabaseTask implements RunnableTask<Query.Ou
         title = "Page size",
         description = "Maximum number of results per page (1-100). Defaults to 100."
     )
+    @PluginProperty(group = "advanced")
     private Property<Integer> pageSize = Property.ofValue(100);
 
     @Schema(
         title = "Start cursor",
         description = "Pagination cursor returned by a previous query to fetch the next page of results."
     )
+    @PluginProperty(group = "advanced")
     private Property<String> startCursor;
 
     @Builder.Default
@@ -114,6 +119,7 @@ public class Query extends AbstractDatabaseTask implements RunnableTask<Query.Ou
             `FETCH_ONE` returns only the first row.
             `NONE` skips returning row data entirely."""
     )
+    @PluginProperty(group = "execution")
     private Property<FetchType> fetchType = Property.ofValue(FetchType.STORE);
 
     @Override

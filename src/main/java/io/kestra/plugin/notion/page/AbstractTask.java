@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import io.kestra.core.models.annotations.PluginProperty;
 
 @SuperBuilder
 @ToString
@@ -27,6 +28,7 @@ public abstract class AbstractTask extends NotionConnection implements RunnableT
         description = "Notion page identifier in UUID format; 32‑character hex is also accepted"
     )
     @NotNull
+    @PluginProperty(group = "main")
     protected Property<String> pageId;
 
     /**

@@ -21,6 +21,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
+import io.kestra.core.models.annotations.PluginProperty;
 
 @SuperBuilder
 @ToString
@@ -89,6 +90,7 @@ public class Create extends NotionConnection implements RunnableTask<Create.Outp
         description = "Required page title text"
     )
     @NotNull
+    @PluginProperty(group = "main")
     private Property<String> title;
 
     @Schema(
@@ -97,12 +99,14 @@ public class Create extends NotionConnection implements RunnableTask<Create.Outp
             Optional markdown content converted to Notion blocks; empty leaves the page body blank.
             Note that the Notion API enforces a limit of 2000 characters per [rich text content block](https://developers.notion.com/reference/request-limits)."""
     )
+    @PluginProperty(group = "advanced")
     private Property<String> content;
 
     @Schema(
         title = "Parent page ID",
         description = "Optional parent page ID (UUID). When absent, the page is created at the workspace root"
     )
+    @PluginProperty(group = "advanced")
     private Property<String> parentPageId;
 
     @Override

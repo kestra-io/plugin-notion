@@ -22,6 +22,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
+import io.kestra.core.models.annotations.PluginProperty;
 
 @SuperBuilder
 @ToString
@@ -70,6 +71,7 @@ public class CreateItem extends AbstractDatabaseTask implements RunnableTask<Cre
         description = "The title for the new database row. Mapped to the database title property."
     )
     @NotNull
+    @PluginProperty(group = "main")
     private Property<String> title;
 
     @Schema(
@@ -79,6 +81,7 @@ public class CreateItem extends AbstractDatabaseTask implements RunnableTask<Cre
             Keys are property names as defined in the database schema.
             See the [Notion property value reference](https://developers.notion.com/reference/property-value-object)."""
     )
+    @PluginProperty(group = "advanced")
     private Property<Map<String, Object>> properties;
 
     @Schema(
@@ -87,6 +90,7 @@ public class CreateItem extends AbstractDatabaseTask implements RunnableTask<Cre
             Optional markdown content appended as paragraph blocks to the page body.
             Note that the Notion API enforces a limit of 2000 characters per [rich text content block](https://developers.notion.com/reference/request-limits)."""
     )
+    @PluginProperty(group = "advanced")
     private Property<String> content;
 
     @Override

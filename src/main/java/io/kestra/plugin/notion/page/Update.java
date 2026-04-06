@@ -18,6 +18,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
+import io.kestra.core.models.annotations.PluginProperty;
 
 @SuperBuilder
 @ToString
@@ -87,6 +88,7 @@ public class Update extends AbstractTask {
         title = "New page title",
         description = "Optional new title for the page. If not provided, the existing title will be kept."
     )
+    @PluginProperty(group = "advanced")
     private Property<String> title;
 
     @Schema(
@@ -95,6 +97,7 @@ public class Update extends AbstractTask {
             The new content for the page in markdown format. This will be appended to the bottom of the page.
             Note that the Notion API enforces a limit of 2000 characters per [rich text content block](https://developers.notion.com/reference/request-limits)."""
     )
+    @PluginProperty(group = "advanced")
     private Property<String> content;
 
     @Override

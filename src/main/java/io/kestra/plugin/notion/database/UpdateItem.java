@@ -20,6 +20,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
+import io.kestra.core.models.annotations.PluginProperty;
 
 @SuperBuilder
 @ToString
@@ -78,6 +79,7 @@ public class UpdateItem extends AbstractDatabaseTask implements RunnableTask<Upd
         description = "The ID of the database item (page) to update; both UUID and 32-character hex formats are accepted."
     )
     @NotNull
+    @PluginProperty(group = "main")
     private Property<String> pageId;
 
     @Schema(
@@ -87,12 +89,14 @@ public class UpdateItem extends AbstractDatabaseTask implements RunnableTask<Upd
             Only the provided properties will be changed; others remain untouched.
             See the [Notion property value reference](https://developers.notion.com/reference/property-value-object)."""
     )
+    @PluginProperty(group = "advanced")
     private Property<Map<String, Object>> properties;
 
     @Schema(
         title = "Archived",
         description = "Set to `true` to soft-delete (archive) the item, or `false` to restore it."
     )
+    @PluginProperty(group = "advanced")
     private Property<Boolean> archived;
 
     @Override
