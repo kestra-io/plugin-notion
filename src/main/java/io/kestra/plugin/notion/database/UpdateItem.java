@@ -3,6 +3,7 @@ package io.kestra.plugin.notion.database;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
@@ -106,7 +107,13 @@ public class UpdateItem extends AbstractDatabaseTask implements RunnableTask<Upd
 
         var body = new HashMap<String, Object>();
 
-        var rProperties = runContext.render(this.properties).asMap(String.class, Object.class);
+        // Coerce string "true"/"false" to Boolean so that Notion checkbox properties rendered
+        // from Pebble expressions are sent as JSON booleans, not strings.
+        var rProperties = runContext.render(this.properties).asMap(String.class, Object.class).entrySet().stream()
+            .collect(Collectors.toMap(
+                Map.Entry::getKey,
+                e -> coerceBooleans(e.getValue())
+            ));
         if (!rProperties.isEmpty()) {
             body.put("properties", rProperties);
         }

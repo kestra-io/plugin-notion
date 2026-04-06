@@ -224,6 +224,44 @@ class CreateItemTest {
         assertThat(output.getPageId(), equalTo(PAGE_ID));
     }
 
+    @Test
+    void createItem_withCheckboxAsStringBoolean_sendsJsonBoolean() throws Exception {
+        // Simulates what happens when YAML has `checkbox: "{{ myVar }}"` and Pebble renders
+        // the expression: the surrounding double-quotes force the result to be a String.
+        // The coerceBooleans fix must turn "true"/"false" strings into real JSON booleans
+        // before the request is sent, otherwise Notion rejects the payload.
+        stubCreatePage(PAGE_ID, false);
+
+        var runContext = runContextFactory.of(Map.of());
+
+        // "true" and "false" as Strings, exactly as Pebble would produce them
+        var properties = Map.<String, Object>of(
+            "Done",   Map.<String, Object>of("checkbox", "true"),
+            "Active", Map.<String, Object>of("checkbox", "false")
+        );
+
+        var createItem = CreateItem.builder()
+            .apiToken(Property.ofValue("test-token"))
+            .databaseId(Property.ofValue(DATABASE_ID))
+            .title(Property.ofValue("Checkbox Item"))
+            .properties(Property.ofValue(properties))
+            .build();
+
+        createItem.run(runContext);
+
+        var requests = wireMockServer.findAll(postRequestedFor(urlEqualTo("/v1/pages")));
+        assertThat(requests.size(), equalTo(1));
+        var body = requests.getFirst().getBodyAsString();
+
+        // Must contain bare JSON booleans, not quoted strings
+        assertThat(body, org.hamcrest.Matchers.containsString("\"checkbox\":true"));
+        assertThat(body, org.hamcrest.Matchers.containsString("\"checkbox\":false"));
+
+        // Must NOT contain the string form
+        assertThat(body, org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("\"checkbox\":\"true\"")));
+        assertThat(body, org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("\"checkbox\":\"false\"")));
+    }
+
     // --- Helper ---
 
     private void stubCreatePage(String pageId, boolean archived) throws Exception {
