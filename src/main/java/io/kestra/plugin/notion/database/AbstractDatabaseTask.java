@@ -17,6 +17,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import io.kestra.core.models.annotations.PluginProperty;
 
 @SuperBuilder
 @ToString
@@ -32,6 +33,7 @@ public abstract class AbstractDatabaseTask extends NotionConnection {
         description = "Notion database identifier; both UUID and 32-character hex formats are accepted."
     )
     @NotNull
+    @PluginProperty(group = "main")
     private Property<String> databaseId;
 
     /**
