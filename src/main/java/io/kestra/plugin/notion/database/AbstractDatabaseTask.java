@@ -88,6 +88,13 @@ public abstract class AbstractDatabaseTask extends NotionConnection {
         throw new IllegalArgumentException("ID must be a valid UUID or a 32-character hex string, got: " + id);
     }
 
+    /**
+     * Builds the Notion API URL for a specific database entity.
+     */
+    protected String buildDatabaseUrl(String databaseId) {
+        return getBaseUrl() + DATABASES_ENDPOINT + "/" + databaseId;
+    }
+
     @Override
     protected String getEndpoint() {
         return DATABASES_ENDPOINT;
