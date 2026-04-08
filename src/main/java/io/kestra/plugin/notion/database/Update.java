@@ -30,7 +30,7 @@ import java.util.Map;
     title = "Update a Notion database",
     description = """
         Updates the title and/or description of an existing Notion database entity.
-        At least one of `title` or `description` must be provided.
+        At least one of `title` or `databaseDescription` must be provided.
         Both properties are optional individually but the task requires at least one to be set."""
 )
 @Plugin(
@@ -48,7 +48,7 @@ import java.util.Map;
                     apiToken: "{{ secret('NOTION_API_TOKEN') }}"
                     databaseId: "12345678-1234-1234-1234-123456789abc"
                     title: "Updated Project Tracker"
-                    description: "Tracks all active projects managed by the data team."
+                    databaseDescription: "Tracks all active projects managed by the data team."
                 """
         ),
         @Example(
