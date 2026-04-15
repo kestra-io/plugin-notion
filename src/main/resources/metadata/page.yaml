@@ -1,6 +1,6 @@
 group: io.kestra.plugin.notion.page
 name: "page"
-title: "Notion"
+title: "Notion Pages"
 description: "Tasks that create, read, update, and archive Notion pages."
 body: "Use a Notion integration token with parent page or database IDs to render markdown into Notion blocks, retrieve page content, update properties, or archive pages, returning the updated Notion payloads."
 videos: []
