@@ -62,7 +62,7 @@ public abstract class NotionConnection extends Task {
         title = "Notion API token",
         description = "The Notion API integration token (Internal Secret connection)"
     )
-    @PluginProperty(group = "connection")
+    @PluginProperty(group = "connection", secret = true)
     private Property<String> apiToken;
 
     @Schema(title = "The HTTP client configuration.")
