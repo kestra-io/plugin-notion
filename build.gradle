@@ -47,7 +47,7 @@ dependencies {
     annotationProcessor group: "io.kestra", name: "processor", version: kestraVersion
 
     // Logs
-    compileOnly 'org.slf4j:slf4j-api:2.0.17'
+    compileOnly 'org.slf4j:slf4j-api:2.0.18'
 }
 
 
