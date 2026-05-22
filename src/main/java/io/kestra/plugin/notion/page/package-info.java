@@ -1,5 +1,5 @@
 @PluginSubGroup(
-    title = "Notion",
+    title = "Notion Pages",
     description = "This sub-group of plugins contains tasks for using Notion API to create, read, update, and archive pages with markdown content.", categories = {
         PluginSubGroup.PluginCategory.BUSINESS
     }

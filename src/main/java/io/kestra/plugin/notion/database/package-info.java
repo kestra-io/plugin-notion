@@ -1,5 +1,5 @@
 @PluginSubGroup(
-    title = "Notion Database",
+    title = "Notion Databases",
     description = "This sub-group of plugins contains tasks for querying and managing items in Notion databases.",
     categories = {
         PluginSubGroup.PluginCategory.BUSINESS
