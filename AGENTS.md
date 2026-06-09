@@ -29,6 +29,7 @@ Infrastructure dependencies (Docker Compose services):
 - `io.kestra.plugin.notion.page.Create`
 - `io.kestra.plugin.notion.page.Read`
 - `io.kestra.plugin.notion.page.Update`
+- `io.kestra.plugin.notion.page.UpdateTrigger` — polling trigger that fires when Notion pages are updated
 
 ### Project Structure
 

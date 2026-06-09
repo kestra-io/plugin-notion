@@ -46,7 +46,7 @@ public abstract class NotionConnection extends Task {
     /**
      * Gets the base URL for Notion API, allowing override for testing
      */
-    protected static String getBaseUrl() {
+    public static String getBaseUrl() {
         String overrideUrl = System.getProperty("notion.api.base.url");
         return overrideUrl != null ? overrideUrl : NOTION_API_URL;
     }
