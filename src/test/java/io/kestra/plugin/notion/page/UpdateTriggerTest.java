@@ -3,6 +3,7 @@ package io.kestra.plugin.notion.page;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -143,6 +144,59 @@ class UpdateTriggerTest {
             Optional<Execution> result = trigger.evaluate(conditionContext, context);
 
             assertThat(result.isPresent(), is(true));
+        } finally {
+            wireMock.stop();
+            restoreBaseUrl(previousUrl);
+        }
+    }
+
+    @Test
+    void notionMinutePrecision_pageInSameMinuteAsWatermark_isDetected() throws Exception {
+        // Notion truncates last_edited_time to minutes (seconds/ms always 0).
+        // The previous evaluation timestamp has sub-second precision. If we compare
+        // without truncation, a page edited 30s after the watermark minute starts
+        // appears as "equal to" the watermark and is silently skipped.
+        var trigger = UpdateTrigger.builder()
+            .id("t-precision")
+            .type(UpdateTrigger.class.getName())
+            .apiToken(Property.ofValue("test-token"))
+            .build();
+
+        var entry = TestsUtils.mockTrigger(runContextFactory, trigger);
+        var conditionContext = entry.getKey();
+
+        var wireMock = new WireMockServer(WireMockConfiguration.options().dynamicPort());
+        wireMock.start();
+        var previousUrl = System.getProperty("notion.api.base.url");
+        System.setProperty("notion.api.base.url", wireMock.baseUrl());
+
+        try {
+            configureFor("localhost", wireMock.port());
+
+            // Simulate Notion's minute-precision: page edited at HH:mm:30 is reported as HH:mm:00.
+            var notionTimestamp = Instant.now().truncatedTo(ChronoUnit.MINUTES).toString();
+
+            var responseBody = Map.of(
+                "object", "list",
+                "results", List.of(pageJson("page-precision", "https://notion.so/page", "Precision Page", notionTimestamp)),
+                "has_more", false
+            );
+
+            wireMock.stubFor(
+                post(urlEqualTo("/v1/search"))
+                    .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(MAPPER.writeValueAsString(responseBody))
+                        .withStatus(200))
+            );
+
+            // Watermark is 30 seconds into the same minute (sub-second precision from real evaluation).
+            var watermarkInstant = Instant.now().truncatedTo(ChronoUnit.MINUTES).plusSeconds(30);
+            var context = triggerContext(ZonedDateTime.ofInstant(watermarkInstant, java.time.ZoneOffset.UTC));
+
+            Optional<Execution> result = trigger.evaluate(conditionContext, context);
+
+            assertThat("page at minute boundary must not be silently skipped", result.isPresent(), is(true));
         } finally {
             wireMock.stop();
             restoreBaseUrl(previousUrl);

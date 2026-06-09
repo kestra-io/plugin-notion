@@ -4,6 +4,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -178,8 +179,10 @@ public class UpdateTrigger extends AbstractTrigger implements PollingTriggerInte
         var rQuery = runContext.render(query).as(String.class).orElse(null);
         var rParentPageId = runContext.render(parentPageId).as(String.class).orElse(null);
 
-        // The watermark is the last trigger evaluation time. Pages edited strictly after this are new.
-        Instant watermark = context.getDate().toInstant();
+        // Truncate to minutes: Notion's last_edited_time has minute-level precision (seconds are always 0).
+        // Using the raw sub-second evaluation timestamp as watermark would silently miss pages edited
+        // within the same minute as the previous poll.
+        Instant watermark = context.getDate().toInstant().truncatedTo(ChronoUnit.MINUTES);
 
         logger.debug("Polling Notion for pages updated after {}", watermark);
 
@@ -223,7 +226,8 @@ public class UpdateTrigger extends AbstractTrigger implements PollingTriggerInte
                 var lastEditedTime = Instant.parse(lastEditedRaw);
 
                 // Results are sorted descending by last_edited_time; early-exit once we reach older pages.
-                if (!lastEditedTime.isAfter(watermark)) {
+                // Use isBefore (strict <) so pages at exactly the watermark minute are included.
+                if (lastEditedTime.isBefore(watermark)) {
                     return result;
                 }
 
