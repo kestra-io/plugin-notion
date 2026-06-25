@@ -3,9 +3,12 @@ package io.kestra.plugin.notion.page;
 import java.time.Instant;
 import java.util.*;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
+
 import io.kestra.core.http.HttpRequest;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
+import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
@@ -21,7 +24,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
-import io.kestra.core.models.annotations.PluginProperty;
 
 @SuperBuilder
 @ToString
@@ -97,7 +99,8 @@ public class Create extends NotionConnection implements RunnableTask<Create.Outp
         title = "Page content",
         description = """
             Optional markdown content converted to Notion blocks; empty leaves the page body blank.
-            Note that the Notion API enforces a limit of 2000 characters per [rich text content block](https://developers.notion.com/reference/request-limits)."""
+            Note that the Notion API enforces a limit of 2000 characters per [rich text content block](https://developers.notion.com/reference/request-limits).
+            Content over 100 blocks is sent across multiple requests (Notion caps a request at 100 blocks); this is not atomic, so a retry may leave a partially-filled or duplicate page."""
     )
     @PluginProperty(group = "advanced")
     private Property<String> content;
@@ -119,6 +122,11 @@ public class Create extends NotionConnection implements RunnableTask<Create.Outp
         );
 
         String renderedContent = runContext.render(this.content).as(String.class).orElse(null);
+        var blocks = renderedContent != null && !renderedContent.isEmpty()
+            ? MarkdownConverter.markdownToBlocks(renderedContent)
+            : null;
+        // First <=100 blocks go inline with the create; the remainder is appended afterwards.
+        var firstBatch = firstBlockBatch(blocks);
 
         String renderedParentPageId = runContext.render(this.parentPageId).as(String.class).orElse(null);
         if (renderedParentPageId != null && !renderedParentPageId.isEmpty()) {
@@ -132,7 +140,7 @@ public class Create extends NotionConnection implements RunnableTask<Create.Outp
         }
 
         // Build the request body
-        Map<String, Object> requestBody = buildCreatePageRequest(renderedTitle, renderedContent, renderedParentPageId);
+        Map<String, Object> requestBody = buildCreatePageRequest(renderedTitle, firstBatch, renderedParentPageId);
 
         // Make the API call
         String url = buildCreatePageURL();
@@ -142,6 +150,9 @@ public class Create extends NotionConnection implements RunnableTask<Create.Outp
         logger.debug("Request body: {}", mapper.writeValueAsString(requestBody));
 
         NotionResponse response = makeCall(runContext, requestBuilder, NotionResponse.class);
+
+        // Append the blocks that didn't fit in the create request (Notion caps a request at 100 blocks).
+        appendBlocksInBatches(runContext, response.getId(), blocks, firstBatch.size());
 
         return Output.builder()
             .pageId(response.getId())
@@ -159,7 +170,7 @@ public class Create extends NotionConnection implements RunnableTask<Create.Outp
     /**
      * Builds the request body for creating a Notion page
      */
-    private Map<String, Object> buildCreatePageRequest(String title, String content, String parentPageId) {
+    private Map<String, Object> buildCreatePageRequest(String title, ArrayNode firstBatch, String parentPageId) {
         Map<String, Object> requestBody = new HashMap<>();
 
         // Set parent (either a page or workspace)
@@ -187,9 +198,9 @@ public class Create extends NotionConnection implements RunnableTask<Create.Outp
         properties.put("title", titleProperty);
         requestBody.put("properties", properties);
 
-        // Convert markdown content to Notion blocks
-        if (content != null && !content.isEmpty()) {
-            requestBody.put("children", MarkdownConverter.markdownToBlocks(content));
+        // First batch of content blocks (<=100); any beyond that are appended after the page is created.
+        if (firstBatch != null && !firstBatch.isEmpty()) {
+            requestBody.put("children", firstBatch);
         }
 
         return requestBody;

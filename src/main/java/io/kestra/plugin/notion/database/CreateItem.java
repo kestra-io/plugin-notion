@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
+import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
@@ -22,7 +23,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
-import io.kestra.core.models.annotations.PluginProperty;
 
 @SuperBuilder
 @ToString
@@ -88,7 +88,8 @@ public class CreateItem extends AbstractDatabaseTask implements RunnableTask<Cre
         title = "Content",
         description = """
             Optional markdown content appended as paragraph blocks to the page body.
-            Note that the Notion API enforces a limit of 2000 characters per [rich text content block](https://developers.notion.com/reference/request-limits)."""
+            Note that the Notion API enforces a limit of 2000 characters per [rich text content block](https://developers.notion.com/reference/request-limits).
+            Content over 100 blocks is sent across multiple requests (Notion caps a request at 100 blocks); this is not atomic, so a retry may leave a partially-filled or duplicate item."""
     )
     @PluginProperty(group = "advanced")
     private Property<String> content;
@@ -112,27 +113,35 @@ public class CreateItem extends AbstractDatabaseTask implements RunnableTask<Cre
         // properties rendered from Pebble expressions are sent as JSON booleans, not strings.
         var rProperties = new HashMap<String, Object>(
             runContext.render(this.properties).asMap(String.class, Object.class).entrySet().stream()
-                .collect(Collectors.toMap(
-                    Map.Entry::getKey,
-                    e -> coerceBooleans(e.getValue())
-                ))
+                .collect(
+                    Collectors.toMap(
+                        Map.Entry::getKey,
+                        e -> coerceBooleans(e.getValue())
+                    )
+                )
         );
 
         // Set title property (Notion databases use a "title" typed property, usually named "Name")
-        rProperties.put("Name", Map.of(
-            "title", List.of(
-                Map.of(
-                    "type", "text",
-                    "text", Map.of("content", rTitle)
+        rProperties.put(
+            "Name", Map.of(
+                "title", List.of(
+                    Map.of(
+                        "type", "text",
+                        "text", Map.of("content", rTitle)
+                    )
                 )
             )
-        ));
+        );
         body.put("properties", rProperties);
 
-        // Content blocks
+        // Content blocks — first <=100 inline; any beyond that are appended after creation.
         var rContent = runContext.render(this.content).as(String.class).orElse(null);
-        if (rContent != null && !rContent.isBlank()) {
-            body.put("children", MarkdownConverter.markdownToBlocks(rContent));
+        var blocks = rContent != null && !rContent.isBlank()
+            ? MarkdownConverter.markdownToBlocks(rContent)
+            : null;
+        var firstBatch = firstBlockBatch(blocks);
+        if (!firstBatch.isEmpty()) {
+            body.put("children", firstBatch);
         }
 
         var url = getBaseUrl() + PAGES_ENDPOINT;
@@ -140,6 +149,8 @@ public class CreateItem extends AbstractDatabaseTask implements RunnableTask<Cre
 
         var requestBuilder = buildPostRequest(runContext, url, body);
         var response = makeCall(runContext, requestBuilder, NotionResponse.class);
+
+        appendBlocksInBatches(runContext, response.getId(), blocks, firstBatch.size());
 
         logger.info("Created database item with ID: {}", response.getId());
 

@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.kestra.core.http.HttpRequest;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
+import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.notion.NotionResponse;
@@ -18,7 +19,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
-import io.kestra.core.models.annotations.PluginProperty;
 
 @SuperBuilder
 @ToString
@@ -95,7 +95,8 @@ public class Update extends AbstractTask {
         title = "New page content",
         description = """
             The new content for the page in markdown format. This will be appended to the bottom of the page.
-            Note that the Notion API enforces a limit of 2000 characters per [rich text content block](https://developers.notion.com/reference/request-limits)."""
+            Note that the Notion API enforces a limit of 2000 characters per [rich text content block](https://developers.notion.com/reference/request-limits).
+            Content over 100 blocks is appended across multiple requests (Notion caps a request at 100 blocks); a retry re-appends and may duplicate content."""
     )
     @PluginProperty(group = "advanced")
     private Property<String> content;
@@ -204,12 +205,8 @@ public class Update extends AbstractTask {
      * Adds new blocks to a page
      */
     protected void addBlocksToPage(RunContext runContext, String pageId, ArrayNode blocks) throws Exception {
-        Map<String, Object> requestBody = Map.of("children", blocks);
-
-        String url = buildPageChildrenURL(pageId);
-        HttpRequest.HttpRequestBuilder requestBuilder = buildPatchRequest(runContext, url, requestBody);
-
-        makeCall(runContext, requestBuilder, NotionResponse.class);
+        // Append in batches of at most MAX_BLOCKS_PER_REQUEST (Notion caps a single request at 100 blocks).
+        appendBlocksInBatches(runContext, pageId, blocks, 0);
     }
 
     @Override

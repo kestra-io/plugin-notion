@@ -28,8 +28,10 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.patch;
+import static com.github.tomakehurst.wiremock.client.WireMock.patchRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -346,6 +348,69 @@ class UpdateTest {
             assertTrue(initialPos >= 0, "Initial Content not found in final markdown");
             assertTrue(appendedPos >= 0, "Appended Section not found in final markdown");
             assertTrue(appendedPos > initialPos, "Appended content should appear after initial content (append behavior)");
+        } finally {
+            wireMockServer.stop();
+            if (previousBaseUrl == null) {
+                System.clearProperty("notion.api.base.url");
+            } else {
+                System.setProperty("notion.api.base.url", previousBaseUrl);
+            }
+        }
+    }
+
+    @Test
+    void testUpdateSplitsContentOver100BlocksIntoBatches() throws Exception {
+        String apiToken = "secret_token";
+        String pageId = "12345678-1234-1234-1234-123456789abc";
+        String title = "Batched";
+
+        // 150 paragraphs -> 150 blocks -> must be appended as 100 + 50 across two requests, not one.
+        StringBuilder content = new StringBuilder();
+        for (int i = 0; i < 150; i++) {
+            content.append("Line ").append(i).append("\n\n");
+        }
+
+        RunContext runContext = runContextFactory.of(Map.of());
+
+        WireMockServer wireMockServer = new WireMockServer(WireMockConfiguration.options().dynamicPort());
+        wireMockServer.start();
+
+        String previousBaseUrl = System.getProperty("notion.api.base.url");
+        System.setProperty("notion.api.base.url", wireMockServer.baseUrl());
+
+        try {
+            configureFor("localhost", wireMockServer.port());
+
+            wireMockServer.stubFor(
+                get(urlEqualTo("/v1/pages/" + pageId))
+                    .willReturn(
+                        aResponse()
+                            .withHeader("Content-Type", "application/json")
+                            .withBody(pageResponseJson(pageId, title))
+                            .withStatus(200)
+                    )
+            );
+
+            wireMockServer.stubFor(
+                patch(urlEqualTo("/v1/blocks/" + pageId + "/children"))
+                    .willReturn(
+                        aResponse()
+                            .withHeader("Content-Type", "application/json")
+                            .withBody("{\"object\":\"list\",\"results\":[]}")
+                            .withStatus(200)
+                    )
+            );
+
+            Update update = Update.builder()
+                .apiToken(Property.ofValue(apiToken))
+                .pageId(Property.ofValue(pageId))
+                .content(Property.ofValue(content.toString()))
+                .build();
+
+            update.run(runContext);
+
+            // The 150 blocks must be appended in two <=100-block batches, not one over-limit request.
+            verify(2, patchRequestedFor(urlEqualTo("/v1/blocks/" + pageId + "/children")));
         } finally {
             wireMockServer.stop();
             if (previousBaseUrl == null) {
