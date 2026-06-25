@@ -470,6 +470,205 @@ class MarkdownConverterTest {
     }
 
     // =========================
+    // Issue #56: GFM tables, inline formatting, backslash escapes
+    // =========================
+
+    @Test
+    void testGfmTableToBlocks() {
+        String markdown = """
+            | Feature | Value |
+            |---------|-------|
+            | Tables  | yes   |
+            | Bold    | also  |
+            """;
+
+        ArrayNode result = MarkdownConverter.markdownToBlocks(markdown);
+
+        assertThat(result.size(), equalTo(1));
+        JsonNode table = result.get(0);
+        assertThat(table.path("type").asText(), equalTo("table"));
+
+        JsonNode tableData = table.path("table");
+        assertThat(tableData.path("table_width").asInt(), equalTo(2));
+        assertThat(tableData.path("has_column_header").asBoolean(), equalTo(true));
+        assertThat(tableData.path("has_row_header").asBoolean(), equalTo(false));
+
+        JsonNode rows = tableData.path("children");
+        assertThat(rows.size(), equalTo(3)); // header + 2 body rows
+
+        JsonNode headerRow = rows.get(0);
+        assertThat(headerRow.path("type").asText(), equalTo("table_row"));
+        JsonNode headerCells = headerRow.path("table_row").path("cells");
+        assertThat(headerCells.size(), equalTo(2));
+        assertThat(headerCells.get(0).get(0).path("text").path("content").asText(), equalTo("Feature"));
+        assertThat(headerCells.get(1).get(0).path("text").path("content").asText(), equalTo("Value"));
+
+        JsonNode firstBodyCell = rows.get(1).path("table_row").path("cells").get(0).get(0);
+        assertThat(firstBodyCell.path("text").path("content").asText(), equalTo("Tables"));
+    }
+
+    @Test
+    void testInlineFormattingAnnotations() {
+        String markdown = "A paragraph with **bold**, *italic*, `code`, and ~~struck~~ text.";
+        ArrayNode result = MarkdownConverter.markdownToBlocks(markdown);
+
+        assertThat(result.size(), equalTo(1));
+        JsonNode richText = result.get(0).path("paragraph").path("rich_text");
+
+        assertThat(annotationFor(richText, "bold").path("bold").asBoolean(), equalTo(true));
+        assertThat(annotationFor(richText, "italic").path("italic").asBoolean(), equalTo(true));
+        assertThat(annotationFor(richText, "code").path("code").asBoolean(), equalTo(true));
+        assertThat(annotationFor(richText, "struck").path("strikethrough").asBoolean(), equalTo(true));
+    }
+
+    @Test
+    void testBoldLinkCombination() {
+        String markdown = "**[Kestra](https://kestra.io)**";
+        ArrayNode result = MarkdownConverter.markdownToBlocks(markdown);
+
+        JsonNode richText = result.get(0).path("paragraph").path("rich_text");
+        assertThat(richText.size(), equalTo(1));
+
+        JsonNode item = richText.get(0);
+        assertThat(item.path("text").path("content").asText(), equalTo("Kestra"));
+        assertThat(item.path("text").path("link").path("url").asText(), equalTo("https://kestra.io"));
+        assertThat(item.path("href").asText(), equalTo("https://kestra.io"));
+        assertThat(item.path("annotations").path("bold").asBoolean(), equalTo(true));
+    }
+
+    @Test
+    void testBackslashEscapesAreResolved() {
+        String markdown = "A price of \\$500 and a literal \\*asterisk\\*.";
+        ArrayNode result = MarkdownConverter.markdownToBlocks(markdown);
+
+        String text = concatRichText(result.get(0).path("paragraph").path("rich_text"));
+        assertThat(text, equalTo("A price of $500 and a literal *asterisk*."));
+        assertThat(text, not(containsString("\\")));
+    }
+
+    @Test
+    void testTaskListBecomesTodoBlocks() {
+        String markdown = "- [ ] Review proposal\n- [x] Schedule follow-up";
+        ArrayNode result = MarkdownConverter.markdownToBlocks(markdown);
+
+        assertThat(result.size(), equalTo(2));
+
+        JsonNode first = result.get(0);
+        assertThat(first.path("type").asText(), equalTo("to_do"));
+        assertThat(first.path("to_do").path("checked").asBoolean(), equalTo(false));
+        assertThat(concatRichText(first.path("to_do").path("rich_text")).trim(), equalTo("Review proposal"));
+
+        JsonNode second = result.get(1);
+        assertThat(second.path("type").asText(), equalTo("to_do"));
+        assertThat(second.path("to_do").path("checked").asBoolean(), equalTo(true));
+    }
+
+    @Test
+    void testCodeBlockWithoutLanguageDefaultsToPlainText() {
+        String markdown = "```\nsome code\n```";
+        ArrayNode result = MarkdownConverter.markdownToBlocks(markdown);
+
+        JsonNode code = result.get(0);
+        assertThat(code.path("type").asText(), equalTo("code"));
+        assertThat(code.path("code").path("language").asText(), equalTo("plain text"));
+    }
+
+    @Test
+    void testIssue56Repro() {
+        String markdown = """
+            ## Repro
+
+            A paragraph with **bold**, *italic*, `code`, a [link](https://kestra.io), and a price of \\$500.
+
+            | Feature | Value |
+            |---|---|
+            | Tables | should render |
+            | Bold   | **yes**       |
+            """;
+
+        ArrayNode result = MarkdownConverter.markdownToBlocks(markdown);
+
+        assertThat(blockTypes(result), hasItems("heading_2", "paragraph", "table"));
+
+        JsonNode paragraph = firstBlockOfType(result, "paragraph");
+        String paraText = concatRichText(paragraph.path("paragraph").path("rich_text"));
+        assertThat(paraText, containsString("$500")); // escape resolved
+        assertThat(paraText, not(containsString("\\$")));
+
+        JsonNode table = firstBlockOfType(result, "table");
+        assertThat(table.path("table").path("table_width").asInt(), equalTo(2));
+
+        // Bold inside a table cell carries the annotation.
+        JsonNode boldCell = table.path("table").path("children").get(2)
+            .path("table_row").path("cells").get(1).get(0);
+        assertThat(boldCell.path("text").path("content").asText(), equalTo("yes"));
+        assertThat(boldCell.path("annotations").path("bold").asBoolean(), equalTo(true));
+    }
+
+    @Test
+    void testCodeFenceLanguageAliasesMapToNotionEnum() {
+        assertThat(codeLanguage("```js\nx\n```"), equalTo("javascript"));
+        assertThat(codeLanguage("```ts\nx\n```"), equalTo("typescript"));
+        assertThat(codeLanguage("```yml\nx\n```"), equalTo("yaml"));
+        assertThat(codeLanguage("```Java\nx\n```"), equalTo("java"));
+    }
+
+    @Test
+    void testUnknownCodeFenceLanguageFallsBackToPlainText() {
+        assertThat(codeLanguage("```no-such-lang\nx\n```"), equalTo("plain text"));
+    }
+
+    private String codeLanguage(String markdown) {
+        return MarkdownConverter.markdownToBlocks(markdown).get(0).path("code").path("language").asText();
+    }
+
+    @Test
+    void testEmptyLinkDestinationRendersAsPlainText() {
+        ArrayNode result = MarkdownConverter.markdownToBlocks("see [here]() now");
+
+        JsonNode richText = result.get(0).path("paragraph").path("rich_text");
+        assertThat(concatRichText(richText), equalTo("see here now"));
+        for (JsonNode item : richText) {
+            assertThat(item.path("text").has("link"), equalTo(false));
+            assertThat(item.has("href"), equalTo(false));
+        }
+    }
+
+    private JsonNode annotationFor(JsonNode richText, String content) {
+        for (JsonNode item : richText) {
+            if (content.equals(item.path("text").path("content").asText())) {
+                return item.path("annotations");
+            }
+        }
+        throw new AssertionError("No rich text item with content: " + content);
+    }
+
+    private String concatRichText(JsonNode richText) {
+        StringBuilder sb = new StringBuilder();
+        for (JsonNode item : richText) {
+            sb.append(item.path("text").path("content").asText());
+        }
+        return sb.toString();
+    }
+
+    private java.util.List<String> blockTypes(ArrayNode blocks) {
+        java.util.List<String> types = new java.util.ArrayList<>();
+        for (JsonNode block : blocks) {
+            types.add(block.path("type").asText());
+        }
+        return types;
+    }
+
+    private JsonNode firstBlockOfType(ArrayNode blocks, String type) {
+        for (JsonNode block : blocks) {
+            if (type.equals(block.path("type").asText())) {
+                return block;
+            }
+        }
+        throw new AssertionError("No block of type: " + type);
+    }
+
+    // =========================
     // Helper Methods for Test Data Creation
     // =========================
 

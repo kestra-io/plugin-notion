@@ -48,6 +48,12 @@ dependencies {
 
     // Logs
     compileOnly 'org.slf4j:slf4j-api:2.0.17'
+
+    // Markdown parsing (CommonMark + GFM tables/strikethrough/task-lists), bundled into the plugin jar via shadowJar
+    implementation 'org.commonmark:commonmark:0.29.0'
+    implementation 'org.commonmark:commonmark-ext-gfm-tables:0.29.0'
+    implementation 'org.commonmark:commonmark-ext-gfm-strikethrough:0.29.0'
+    implementation 'org.commonmark:commonmark-ext-task-list-items:0.29.0'
 }
 
 
