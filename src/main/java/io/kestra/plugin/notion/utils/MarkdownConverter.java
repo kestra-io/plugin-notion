@@ -42,6 +42,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import io.kestra.core.serializers.JacksonMapper;
+
 /**
  * Utility class for converting between Markdown and Notion blocks format.
  * Supports bidirectional conversion for common content types.
@@ -57,7 +59,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public class MarkdownConverter {
 
     private static final Logger logger = LoggerFactory.getLogger(MarkdownConverter.class);
-    private static final ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper mapper = JacksonMapper.ofJson();
 
     private static final List<Extension> EXTENSIONS = List.of(
         TablesExtension.create(),
@@ -97,10 +99,6 @@ public class MarkdownConverter {
         Map.entry("plaintext", "plain text"), Map.entry("txt", "plain text")
     );
 
-    // =========================================================================
-    // Markdown -> Notion blocks
-    // =========================================================================
-
     /**
      * Convert markdown content to Notion blocks array
      *
@@ -108,7 +106,7 @@ public class MarkdownConverter {
      * @return Array of Notion blocks
      */
     public static ArrayNode markdownToBlocks(String markdown) {
-        ArrayNode blocks = mapper.createArrayNode();
+        var blocks = mapper.createArrayNode();
 
         if (markdown == null || markdown.trim().isEmpty()) {
             return blocks;
@@ -116,8 +114,8 @@ public class MarkdownConverter {
 
         logger.debug("Converting markdown to Notion blocks: {} chars", markdown.length());
 
-        Node document = PARSER.parse(markdown);
-        for (Node node = document.getFirstChild(); node != null; node = node.getNext()) {
+        var document = PARSER.parse(markdown);
+        for (var node = document.getFirstChild(); node != null; node = node.getNext()) {
             appendBlock(blocks, node);
         }
 
@@ -138,10 +136,15 @@ public class MarkdownConverter {
             case OrderedList list -> appendListItems(out, list, true);
             case BlockQuote quote -> out.add(quoteBlock(quote));
             case ThematicBreak thematicBreak -> out.add(block("divider", mapper.createObjectNode()));
-            case TableBlock table -> out.add(tableBlock(table));
+            case TableBlock table -> {
+                var tableNode = tableBlock(table);
+                if (tableNode != null) {
+                    out.add(tableNode);
+                }
+            }
             default -> {
                 // Fallback: surface any inline content as a paragraph so nothing is silently dropped.
-                ArrayNode richText = inlineRichText(node);
+                var richText = inlineRichText(node);
                 if (!richText.isEmpty()) {
                     out.add(wrapParagraph(richText));
                 }
@@ -150,7 +153,7 @@ public class MarkdownConverter {
     }
 
     private static void appendListItems(ArrayNode out, Node list, boolean ordered) {
-        for (Node item = list.getFirstChild(); item != null; item = item.getNext()) {
+        for (var item = list.getFirstChild(); item != null; item = item.getNext()) {
             if (item instanceof ListItem listItem) {
                 out.add(listItemBlock(listItem, ordered));
             }
@@ -162,7 +165,7 @@ public class MarkdownConverter {
      * {@code to_do} block; nested lists/blocks under the item become Notion children.
      */
     private static ObjectNode listItemBlock(ListItem item, boolean ordered) {
-        Node first = item.getFirstChild();
+        var first = item.getFirstChild();
 
         // The task-list extension prepends a TaskListItemMarker as the list item's first child;
         // its presence turns the item into a Notion to_do block.
@@ -172,24 +175,18 @@ public class MarkdownConverter {
             first = first.getNext();
         }
 
-        ArrayNode richText;
-        Node childStart;
-        if (first instanceof Paragraph) {
-            richText = inlineRichText(first);
-            childStart = first.getNext();
-        } else {
-            richText = mapper.createArrayNode();
-            childStart = first;
-        }
+        var hasParagraph = first instanceof Paragraph;
+        var richText = hasParagraph ? inlineRichText(first) : mapper.createArrayNode();
+        var childStart = hasParagraph ? first.getNext() : first;
 
-        ArrayNode children = mapper.createArrayNode();
-        for (Node child = childStart; child != null; child = child.getNext()) {
+        var children = mapper.createArrayNode();
+        for (var child = childStart; child != null; child = child.getNext()) {
             appendBlock(children, child);
         }
 
-        String type = marker != null ? "to_do" : (ordered ? "numbered_list_item" : "bulleted_list_item");
+        var type = marker != null ? "to_do" : (ordered ? "numbered_list_item" : "bulleted_list_item");
 
-        ObjectNode body = mapper.createObjectNode();
+        var body = mapper.createObjectNode();
         body.set("rich_text", richText);
         if (marker != null) {
             body.put("checked", marker.isChecked());
@@ -202,20 +199,20 @@ public class MarkdownConverter {
     }
 
     private static ObjectNode quoteBlock(BlockQuote quote) {
-        ArrayNode richText = mapper.createArrayNode();
-        ArrayNode children = mapper.createArrayNode();
+        var richText = mapper.createArrayNode();
+        var children = mapper.createArrayNode();
 
-        Node first = quote.getFirstChild();
-        Node childStart = quote.getFirstChild();
+        var first = quote.getFirstChild();
+        var childStart = first;
         if (first instanceof Paragraph) {
             richText = inlineRichText(first);
             childStart = first.getNext();
         }
-        for (Node child = childStart; child != null; child = child.getNext()) {
+        for (var child = childStart; child != null; child = child.getNext()) {
             appendBlock(children, child);
         }
 
-        ObjectNode body = mapper.createObjectNode();
+        var body = mapper.createObjectNode();
         body.set("rich_text", richText);
         if (!children.isEmpty()) {
             body.set("children", children);
@@ -224,17 +221,17 @@ public class MarkdownConverter {
     }
 
     private static ObjectNode tableBlock(TableBlock table) {
-        List<ArrayNode> rowCells = new ArrayList<>();
-        int width = 0;
+        var rowCells = new ArrayList<ArrayNode>();
+        var width = 0;
 
         // A TableBlock contains a TableHead and (optionally) a TableBody, each holding TableRows.
-        for (Node section = table.getFirstChild(); section != null; section = section.getNext()) {
-            for (Node row = section.getFirstChild(); row != null; row = row.getNext()) {
+        for (var section = table.getFirstChild(); section != null; section = section.getNext()) {
+            for (var row = section.getFirstChild(); row != null; row = row.getNext()) {
                 if (!(row instanceof TableRow)) {
                     continue;
                 }
-                ArrayNode cells = mapper.createArrayNode();
-                for (Node cell = row.getFirstChild(); cell != null; cell = cell.getNext()) {
+                var cells = mapper.createArrayNode();
+                for (var cell = row.getFirstChild(); cell != null; cell = cell.getNext()) {
                     if (cell instanceof TableCell) {
                         cells.add(inlineRichText(cell));
                     }
@@ -244,18 +241,23 @@ public class MarkdownConverter {
             }
         }
 
-        ArrayNode children = mapper.createArrayNode();
-        for (ArrayNode cells : rowCells) {
+        if (width == 0) {
+            // Degenerate table (e.g. a separator-only row) — Notion rejects table_width: 0.
+            return null;
+        }
+
+        var children = mapper.createArrayNode();
+        for (var cells : rowCells) {
             // Notion requires every row to have exactly table_width cells.
             while (cells.size() < width) {
                 cells.add(mapper.createArrayNode());
             }
-            ObjectNode rowBody = mapper.createObjectNode();
+            var rowBody = mapper.createObjectNode();
             rowBody.set("cells", cells);
             children.add(block("table_row", rowBody));
         }
 
-        ObjectNode body = mapper.createObjectNode();
+        var body = mapper.createObjectNode();
         body.put("table_width", width);
         body.put("has_column_header", true);
         body.put("has_row_header", false);
@@ -264,22 +266,22 @@ public class MarkdownConverter {
     }
 
     private static ObjectNode headingBlock(Heading heading) {
-        String type = "heading_" + Math.min(heading.getLevel(), MAX_HEADING_LEVEL);
-        ObjectNode body = mapper.createObjectNode();
+        var type = "heading_" + Math.min(heading.getLevel(), MAX_HEADING_LEVEL);
+        var body = mapper.createObjectNode();
         body.set("rich_text", inlineRichText(heading));
         return block(type, body);
     }
 
     private static ObjectNode wrapParagraph(ArrayNode richText) {
-        ObjectNode body = mapper.createObjectNode();
+        var body = mapper.createObjectNode();
         body.set("rich_text", richText);
         return block("paragraph", body);
     }
 
     private static ObjectNode codeBlock(String content, String info) {
-        ObjectNode body = mapper.createObjectNode();
+        var body = mapper.createObjectNode();
 
-        ArrayNode richText = mapper.createArrayNode();
+        var richText = mapper.createArrayNode();
         addText(richText, stripTrailingNewline(content), Ctx.EMPTY);
         body.set("rich_text", richText);
 
@@ -297,7 +299,7 @@ public class MarkdownConverter {
         if (info == null || info.isBlank()) {
             return "plain text";
         }
-        String token = info.trim().split("\\s+")[0].toLowerCase(Locale.ROOT);
+        var token = info.trim().split("\\s+")[0].toLowerCase(Locale.ROOT);
         token = LANGUAGE_ALIASES.getOrDefault(token, token);
         return NOTION_CODE_LANGUAGES.contains(token) ? token : "plain text";
     }
@@ -310,20 +312,18 @@ public class MarkdownConverter {
     }
 
     private static ObjectNode block(String type, ObjectNode body) {
-        ObjectNode block = mapper.createObjectNode();
+        var block = mapper.createObjectNode();
         block.put("object", "block");
         block.put("type", type);
         block.set(type, body);
         return block;
     }
 
-    // ---- Inline rich text -------------------------------------------------
-
     /**
      * Build a Notion {@code rich_text} array from a block node's inline children.
      */
     private static ArrayNode inlineRichText(Node parent) {
-        ArrayNode out = mapper.createArrayNode();
+        var out = mapper.createArrayNode();
         collectInlines(parent, out, Ctx.EMPTY);
         return out;
     }
@@ -333,7 +333,7 @@ public class MarkdownConverter {
      * nested emphasis and links so e.g. a bold link is both bold and a link.
      */
     private static void collectInlines(Node parent, ArrayNode out, Ctx ctx) {
-        for (Node child = parent.getFirstChild(); child != null; child = child.getNext()) {
+        for (var child = parent.getFirstChild(); child != null; child = child.getNext()) {
             switch (child) {
                 case Text text -> addText(out, text.getLiteral(), ctx);
                 case StrongEmphasis strong -> collectInlines(child, out, ctx.withBold());
@@ -341,7 +341,7 @@ public class MarkdownConverter {
                 case Strikethrough strikethrough -> collectInlines(child, out, ctx.withStrike());
                 case Code code -> addText(out, code.getLiteral(), ctx.withCode());
                 case Link link -> {
-                    String dest = link.getDestination();
+                    var dest = link.getDestination();
                     collectInlines(child, out, dest == null || dest.isBlank() ? ctx : ctx.withHref(dest));
                 }
                 case Image image -> collectInlines(child, out, ctx); // render alt-text inlines as plain text
@@ -359,13 +359,13 @@ public class MarkdownConverter {
             return;
         }
 
-        ObjectNode item = mapper.createObjectNode();
+        var item = mapper.createObjectNode();
         item.put("type", "text");
 
-        ObjectNode text = mapper.createObjectNode();
+        var text = mapper.createObjectNode();
         text.put("content", content);
         if (ctx.href() != null) {
-            ObjectNode link = mapper.createObjectNode();
+            var link = mapper.createObjectNode();
             link.put("url", ctx.href());
             text.set("link", link);
         }
@@ -380,7 +380,7 @@ public class MarkdownConverter {
     }
 
     private static ObjectNode annotations(Ctx ctx) {
-        ObjectNode annotations = mapper.createObjectNode();
+        var annotations = mapper.createObjectNode();
         annotations.put("bold", ctx.bold());
         annotations.put("italic", ctx.italic());
         annotations.put("strikethrough", ctx.strike());
@@ -417,10 +417,6 @@ public class MarkdownConverter {
             return new Ctx(bold, italic, code, strike, url);
         }
     }
-
-    // =========================================================================
-    // Notion blocks -> Markdown
-    // =========================================================================
 
     /**
      * Convert Notion blocks to markdown content
