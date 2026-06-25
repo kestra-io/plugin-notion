@@ -1,12 +1,12 @@
 plugins {
     id 'io.kestra.gradle.repository-conventions' version '1.2.3'
-    id 'io.kestra.gradle.spotless-conventions' version '1.1.0'
-    id "com.vanniktech.maven.publish" version "0.36.0"
+    id 'io.kestra.gradle.spotless-conventions' version '1.2.1'
+    id "com.vanniktech.maven.publish" version "0.37.0"
     id 'java-library'
     id "idea"
     id 'jacoco'
     id "com.adarshr.test-logger" version "4.0.0"
-    id "com.gradleup.shadow" version "9.4.1"
+    id "com.gradleup.shadow" version "9.4.2"
     id 'signing'
     id "com.github.ben-manes.versions" version "0.54.0"
     id 'net.researchgate.release' version '3.1.0'
@@ -48,7 +48,13 @@ dependencies {
     annotationProcessor group: "io.kestra", name: "processor", version: kestraVersion
 
     // Logs
-    compileOnly 'org.slf4j:slf4j-api:2.0.17'
+    compileOnly 'org.slf4j:slf4j-api:2.0.18'
+
+    // Markdown parsing (CommonMark + GFM tables/strikethrough/task-lists), bundled into the plugin jar via shadowJar
+    implementation 'org.commonmark:commonmark:0.29.0'
+    implementation 'org.commonmark:commonmark-ext-gfm-tables:0.29.0'
+    implementation 'org.commonmark:commonmark-ext-gfm-strikethrough:0.29.0'
+    implementation 'org.commonmark:commonmark-ext-task-list-items:0.29.0'
 }
 
 
