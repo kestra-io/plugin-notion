@@ -50,7 +50,7 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @NoArgsConstructor
 @Schema(
-    title = "React to Notion page updates.",
+    title = "React to Notion page updates",
     description = """
         Polls the Notion Search API at the configured interval.
         On each evaluation it collects all pages whose `last_edited_time` is strictly greater than
@@ -132,7 +132,7 @@ public class UpdateTrigger extends AbstractTrigger implements PollingTriggerInte
 
     @Builder.Default
     @Schema(
-        title = "Interval between polls.",
+        title = "Interval between polls",
         description = "ISO 8601 duration. A minimum of PT30S is recommended to avoid overloading the Notion API."
     )
     @PluginProperty(group = "execution")
@@ -140,26 +140,26 @@ public class UpdateTrigger extends AbstractTrigger implements PollingTriggerInte
     private Duration interval = Duration.ofMinutes(5);
 
     @Schema(
-        title = "Notion API token.",
+        title = "Notion API token",
         description = "The Notion internal integration token used to authenticate API requests."
     )
     @PluginProperty(group = "connection", secret = true)
     @NotNull
     private Property<String> apiToken;
 
-    @Schema(title = "HTTP client configuration.")
+    @Schema(title = "HTTP client configuration")
     @PluginProperty(group = "connection")
     private HttpConfiguration options;
 
     @Schema(
-        title = "Full-text search query.",
+        title = "Full-text search query",
         description = "Optional text passed as the `query` field of the Notion Search API request. Narrows results server-side to pages whose title or content matches the search terms."
     )
     @PluginProperty(group = "processing")
     private Property<String> query;
 
     @Schema(
-        title = "Parent page ID filter.",
+        title = "Parent page ID filter",
         description = """
             Optional Notion page UUID. When set, only pages whose direct parent is this page are reported.
             This is a client-side filter applied after the API response because the Notion Search API
