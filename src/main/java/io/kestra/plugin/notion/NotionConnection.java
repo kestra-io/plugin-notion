@@ -65,7 +65,7 @@ public abstract class NotionConnection extends Task {
     @PluginProperty(group = "connection", secret = true)
     private Property<String> apiToken;
 
-    @Schema(title = "The HTTP client configuration.")
+    @Schema(title = "The HTTP client configuration")
     HttpConfiguration options;
 
     /**
