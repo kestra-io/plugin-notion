@@ -96,7 +96,7 @@ public class Update extends AbstractTask {
         description = """
             The new content for the page in markdown format. This will be appended to the bottom of the page.
             Note that the Notion API enforces a limit of 2000 characters per [rich text content block](https://developers.notion.com/reference/request-limits).
-            Content over 100 blocks is appended across multiple requests (Notion caps a request at 100 blocks); a retry re-appends and may duplicate content."""
+            Content over 100 blocks is appended across multiple requests (Notion caps a request at 100 blocks); a retry re-appends and may duplicate content. Very large content sends many requests in quick succession and may hit Notion's rate limit. A single block with more than 100 children (e.g. a large table) still exceeds Notion's limit, so only the top-level block list is paginated."""
     )
     @PluginProperty(group = "advanced")
     private Property<String> content;

@@ -89,7 +89,7 @@ public class CreateItem extends AbstractDatabaseTask implements RunnableTask<Cre
         description = """
             Optional markdown content appended as paragraph blocks to the page body.
             Note that the Notion API enforces a limit of 2000 characters per [rich text content block](https://developers.notion.com/reference/request-limits).
-            Content over 100 blocks is sent across multiple requests (Notion caps a request at 100 blocks); this is not atomic, so a retry may leave a partially-filled or duplicate item."""
+            Content over 100 blocks is sent across multiple requests (Notion caps a request at 100 blocks); this is not atomic, so a retry may leave a partially-filled or duplicate item. Very large content sends many requests in quick succession and may hit Notion's rate limit. A single block with more than 100 children (e.g. a large table) still exceeds Notion's limit, so only the top-level block list is paginated."""
     )
     @PluginProperty(group = "advanced")
     private Property<String> content;

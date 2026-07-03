@@ -4,32 +4,31 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 
 import io.kestra.core.junit.annotations.KestraTest;
 import io.kestra.core.models.property.Property;
-import io.kestra.core.runners.RunContext;
 import io.kestra.core.runners.RunContextFactory;
 import io.kestra.core.serializers.JacksonMapper;
 
 import jakarta.inject.Inject;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
+import static com.github.tomakehurst.wiremock.client.WireMock.patch;
+import static com.github.tomakehurst.wiremock.client.WireMock.patchRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @KestraTest
@@ -126,8 +125,10 @@ class CreateItemTest {
         assertThat(output.getPageId(), equalTo(PAGE_ID));
 
         // Verify the request body contained a "children" key
-        wireMockServer.verify(postRequestedFor(urlEqualTo("/v1/pages"))
-            .withRequestBody(com.github.tomakehurst.wiremock.client.WireMock.containing("\"children\"")));
+        wireMockServer.verify(
+            postRequestedFor(urlEqualTo("/v1/pages"))
+                .withRequestBody(com.github.tomakehurst.wiremock.client.WireMock.containing("\"children\""))
+        );
     }
 
     @Test
@@ -160,10 +161,12 @@ class CreateItemTest {
         responseBody.put("last_edited_time", "2024-06-15T11:00:00Z");
         responseBody.put("archived", false);
         responseBody.put("url", "https://www.notion.so/My-Page-" + PAGE_ID);
-        responseBody.put("properties", Map.of(
-            "Name", Map.of("title", List.of(Map.of("plain_text", "Test Item"))),
-            "Status", Map.of("select", Map.of("name", "To Do"))
-        ));
+        responseBody.put(
+            "properties", Map.of(
+                "Name", Map.of("title", List.of(Map.of("plain_text", "Test Item"))),
+                "Status", Map.of("select", Map.of("name", "To Do"))
+            )
+        );
 
         wireMockServer.stubFor(
             post(urlEqualTo("/v1/pages"))
@@ -235,9 +238,9 @@ class CreateItemTest {
         var runContext = runContextFactory.of(Map.of());
 
         // "true" and "false" as Strings, exactly as Pebble would produce them
-        var properties = Map.<String, Object>of(
-            "Done",   Map.<String, Object>of("checkbox", "true"),
-            "Active", Map.<String, Object>of("checkbox", "false")
+        var properties = Map.<String, Object> of(
+            "Done", Map.<String, Object> of("checkbox", "true"),
+            "Active", Map.<String, Object> of("checkbox", "false")
         );
 
         var createItem = CreateItem.builder()
@@ -262,6 +265,68 @@ class CreateItemTest {
         assertThat(body, org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("\"checkbox\":\"false\"")));
     }
 
+    @Test
+    void createItem_with100Blocks_isSingleRequest() throws Exception {
+        // <=100 blocks must stay a single create request, with no append (no behaviour change).
+        var captured = runCreateItemCapturingRequests(100);
+        assertThat(captured.posts(), equalTo(1));
+        assertThat(captured.createChildren(), equalTo(100));
+        assertThat(captured.patches(), equalTo(0));
+    }
+
+    @Test
+    void createItem_with101Blocks_appendsTheOverflow() throws Exception {
+        // Boundary: the 101st block must be appended in exactly one follow-up request (not dropped).
+        var captured = runCreateItemCapturingRequests(101);
+        assertThat(captured.createChildren(), equalTo(100));
+        assertThat(captured.patches(), equalTo(1));
+    }
+
+    @Test
+    void createItem_with150Blocks_splitsIntoCreatePlusAppend() throws Exception {
+        var captured = runCreateItemCapturingRequests(150);
+        assertThat(captured.createChildren(), equalTo(100));
+        assertThat(captured.patches(), equalTo(1));
+    }
+
+    private record CreateItemCapture(int posts, int createChildren, int patches) {
+    }
+
+    private CreateItemCapture runCreateItemCapturingRequests(int blockCount) throws Exception {
+        stubCreatePage(PAGE_ID, false);
+        wireMockServer.stubFor(
+            patch(urlEqualTo("/v1/blocks/" + PAGE_ID + "/children"))
+                .willReturn(
+                    aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\"object\":\"list\",\"results\":[]}")
+                        .withStatus(200)
+                )
+        );
+
+        var content = new StringBuilder();
+        for (int i = 0; i < blockCount; i++) {
+            content.append("## Section ").append(i).append("\n\n");
+        }
+
+        var runContext = runContextFactory.of(Map.of());
+
+        CreateItem.builder()
+            .apiToken(Property.ofValue("test-token"))
+            .databaseId(Property.ofValue(DATABASE_ID))
+            .title(Property.ofValue("Pagination"))
+            .content(Property.ofValue(content.toString()))
+            .build()
+            .run(runContext);
+
+        var posts = wireMockServer.findAll(postRequestedFor(urlEqualTo("/v1/pages")));
+        var patches = wireMockServer.findAll(patchRequestedFor(urlEqualTo("/v1/blocks/" + PAGE_ID + "/children")));
+        var createChildren = posts.isEmpty()
+            ? 0
+            : mapper.readTree(posts.getFirst().getBodyAsString()).path("children").size();
+        return new CreateItemCapture(posts.size(), createChildren, patches.size());
+    }
+
     // --- Helper ---
 
     private void stubCreatePage(String pageId, boolean archived) throws Exception {
@@ -272,9 +337,11 @@ class CreateItemTest {
         responseBody.put("last_edited_time", "2024-01-01T00:00:00Z");
         responseBody.put("archived", archived);
         responseBody.put("url", "https://www.notion.so/" + pageId);
-        responseBody.put("properties", Map.of(
-            "Name", Map.of("title", List.of(Map.of("plain_text", "Test Item")))
-        ));
+        responseBody.put(
+            "properties", Map.of(
+                "Name", Map.of("title", List.of(Map.of("plain_text", "Test Item")))
+            )
+        );
 
         wireMockServer.stubFor(
             post(urlEqualTo("/v1/pages"))
