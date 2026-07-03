@@ -148,4 +148,25 @@ class NotionConnectionTest {
         assertThat(connectionWithConfig, notNullValue());
         assertThat(connectionWithConfig.getOptions(), nullValue());
     }
+
+    @Test
+    void testFirstBlockBatchCapsAtMaxBlocksPerRequest() {
+        var mapper = io.kestra.core.serializers.JacksonMapper.ofJson();
+
+        var many = mapper.createArrayNode();
+        for (int i = 0; i < 150; i++) {
+            many.add(mapper.createObjectNode().put("i", i));
+        }
+        assertThat(NotionConnection.MAX_BLOCKS_PER_REQUEST, equalTo(100));
+        assertThat(connection.firstBlockBatch(many).size(), equalTo(NotionConnection.MAX_BLOCKS_PER_REQUEST));
+
+        var few = mapper.createArrayNode();
+        for (int i = 0; i < 50; i++) {
+            few.add(mapper.createObjectNode().put("i", i));
+        }
+        assertThat(connection.firstBlockBatch(few).size(), equalTo(50));
+
+        assertThat(connection.firstBlockBatch(mapper.createArrayNode()).size(), equalTo(0));
+        assertThat(connection.firstBlockBatch(null).size(), equalTo(0));
+    }
 }

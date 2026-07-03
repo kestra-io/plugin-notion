@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 
 import io.kestra.core.exceptions.IllegalVariableEvaluationException;
 import io.kestra.core.http.HttpRequest;
@@ -57,6 +58,9 @@ public abstract class NotionConnection extends Task {
     public static final String PAGES_ENDPOINT = "/v1/pages";
     public static final String BLOCKS_ENDPOINT = "/v1/blocks";
     public static final String SEARCH_ENDPOINT = "/v1/search";
+
+    /** Notion caps a single create/append request at 100 child blocks. */
+    public static final int MAX_BLOCKS_PER_REQUEST = 100;
 
     @Schema(
         title = "Notion API token",
@@ -186,6 +190,46 @@ public abstract class NotionConnection extends Task {
 
         getAuthorizedRequest(runContext, requestBuilder);
         return requestBuilder;
+    }
+
+    /**
+     * Splits a block array into batches of at most {@link #MAX_BLOCKS_PER_REQUEST} and appends each
+     * batch, in order, to a page/block via the children endpoint. Notion caps a single request at 100
+     * child blocks, so longer content must be paginated.
+     *
+     * @param startIndex index of the first block to append — {@link #MAX_BLOCKS_PER_REQUEST} when the
+     *        first batch was already sent inline with a create request, or 0 to append all
+     */
+    protected void appendBlocksInBatches(RunContext runContext, String blockId, ArrayNode blocks, int startIndex) throws Exception {
+        if (blocks == null) {
+            return;
+        }
+        var url = buildPageChildrenURL(blockId);
+        for (var i = Math.max(startIndex, 0); i < blocks.size(); i += MAX_BLOCKS_PER_REQUEST) {
+            var batch = mapper.createArrayNode();
+            var end = Math.min(i + MAX_BLOCKS_PER_REQUEST, blocks.size());
+            for (var j = i; j < end; j++) {
+                batch.add(blocks.get(j));
+            }
+            var requestBuilder = buildPatchRequest(runContext, url, Map.of("children", batch));
+            makeCall(runContext, requestBuilder, NotionResponse.class);
+        }
+    }
+
+    /**
+     * Returns the first {@link #MAX_BLOCKS_PER_REQUEST} blocks (or fewer) for inclusion in a
+     * page-creation request; the remainder should be appended via
+     * {@link #appendBlocksInBatches(RunContext, String, ArrayNode, int)}.
+     */
+    protected ArrayNode firstBlockBatch(ArrayNode blocks) {
+        var batch = mapper.createArrayNode();
+        if (blocks != null) {
+            var end = Math.min(MAX_BLOCKS_PER_REQUEST, blocks.size());
+            for (var i = 0; i < end; i++) {
+                batch.add(blocks.get(i));
+            }
+        }
+        return batch;
     }
 
     /**
