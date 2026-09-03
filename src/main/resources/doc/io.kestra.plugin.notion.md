@@ -4,7 +4,7 @@ Read and write Notion pages and database records from Kestra flows.
 
 ## Authentication
 
-Set `apiToken` to your Notion integration token (created at [notion.so/my-integrations](https://www.notion.so/my-integrations)). The integration must be shared with any pages or databases it needs to access. Store the token in a [secret](https://kestra.io/docs/concepts/secret) and apply it globally with [plugin defaults](https://kestra.io/docs/workflow-components/plugin-defaults).
+Set `apiToken` to your Notion integration token (created at [notion.so/my-integrations](https://www.notion.so/my-integrations)). The integration must be shared with any pages or databases it needs to access. Store the token in a [secret](https://kestra.io/docs/concepts/secret) and set it on each task.
 
 ## Tasks
 
