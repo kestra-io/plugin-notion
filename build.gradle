@@ -48,7 +48,7 @@ dependencies {
     annotationProcessor group: "io.kestra", name: "processor", version: kestraVersion
 
     // Logs
-    compileOnly 'org.slf4j:slf4j-api:2.0.18'
+    compileOnly 'org.slf4j:slf4j-api:2.0.19'
 
     // Markdown parsing (CommonMark + GFM tables/strikethrough/task-lists), bundled into the plugin jar via shadowJar
     implementation 'org.commonmark:commonmark:0.30.0'
