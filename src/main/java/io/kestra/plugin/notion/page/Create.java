@@ -11,6 +11,7 @@ import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
+import io.kestra.core.models.tasks.TicketingTaskInterface;
 import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.notion.NotionConnection;
 import io.kestra.plugin.notion.NotionResponse;
@@ -85,7 +86,7 @@ import lombok.experimental.SuperBuilder;
         )
     }
 )
-public class Create extends NotionConnection implements RunnableTask<Create.Output> {
+public class Create extends NotionConnection implements RunnableTask<Create.Output>, TicketingTaskInterface {
 
     @Schema(
         title = "Page title",
