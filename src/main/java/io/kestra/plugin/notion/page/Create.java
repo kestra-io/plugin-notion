@@ -9,6 +9,7 @@ import io.kestra.core.http.HttpRequest;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.annotations.PluginProperty;
+import io.kestra.core.models.annotations.TicketingField;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.models.tasks.TicketingTaskInterface;
@@ -94,6 +95,7 @@ public class Create extends NotionConnection implements RunnableTask<Create.Outp
     )
     @NotNull
     @PluginProperty(group = "main")
+    @TicketingField(role = TicketingField.Role.CASE_TITLE)
     private Property<String> title;
 
     @Schema(
@@ -104,6 +106,7 @@ public class Create extends NotionConnection implements RunnableTask<Create.Outp
             Content over 100 blocks is sent across multiple requests (Notion caps a request at 100 blocks); this is not atomic, so a retry may leave a partially-filled or duplicate page. Very large content sends many requests in quick succession and may hit Notion's rate limit. A single block with more than 100 children (e.g. a large table) still exceeds Notion's limit, so only the top-level block list is paginated."""
     )
     @PluginProperty(group = "advanced")
+    @TicketingField(role = TicketingField.Role.CASE_DESCRIPTION)
     private Property<String> content;
 
     @Schema(
@@ -223,12 +226,14 @@ public class Create extends NotionConnection implements RunnableTask<Create.Outp
             title = "Page ID",
             description = "The unique identifier of the created page"
         )
+        @TicketingField(role = TicketingField.Role.TICKET_KEY)
         private String pageId;
 
         @Schema(
             title = "Page URL",
             description = "The URL of the created page in Notion"
         )
+        @TicketingField(role = TicketingField.Role.TICKET_URL)
         private String url;
 
         @Schema(
