@@ -10,6 +10,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import io.kestra.core.exceptions.IllegalVariableEvaluationException;
 import io.kestra.core.http.HttpRequest;
@@ -230,6 +231,28 @@ public abstract class NotionConnection extends Task {
             }
         }
         return batch;
+    }
+
+    protected ArrayNode fetchBlocks(RunContext runContext, String blockId) throws Exception {
+        var blocks = mapper.createArrayNode();
+        String cursor = null;
+        do {
+            var url = buildPageChildrenURL(blockId) + "?page_size=" + MAX_BLOCKS_PER_REQUEST
+                + (cursor != null ? "&start_cursor=" + cursor : "");
+            var response = makeCall(runContext, buildGetRequest(runContext, url), NotionResponse.class);
+            if (response.getChildren() != null) {
+                for (var child : response.getChildren()) {
+                    ObjectNode block = mapper.valueToTree(child);
+                    var type = block.path("type").asText();
+                    if (block.path("has_children").asBoolean(false) && !"child_page".equals(type) && !"child_database".equals(type)) {
+                        block.set("children", fetchBlocks(runContext, block.path("id").asText()));
+                    }
+                    blocks.add(block);
+                }
+            }
+            cursor = Boolean.TRUE.equals(response.getHasMore()) ? response.getNextCursor() : null;
+        } while (cursor != null);
+        return blocks;
     }
 
     /**

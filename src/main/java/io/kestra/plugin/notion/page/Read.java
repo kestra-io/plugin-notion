@@ -77,14 +77,8 @@ public class Read extends AbstractTask {
 
             NotionResponse pageResponse = makeCall(runContext, pageRequestBuilder, NotionResponse.class);
 
-            // Get page content (blocks/children)
-            String childrenUrl = buildPageChildrenURL(renderedPageId);
-            HttpRequest.HttpRequestBuilder childrenRequestBuilder = buildGetRequest(runContext, childrenUrl);
-
-            NotionResponse childrenResponse = makeCall(runContext, childrenRequestBuilder, NotionResponse.class);
-
             // Convert blocks to markdown
-            String markdownContent = MarkdownConverter.blocksToMarkdown(mapper.valueToTree(childrenResponse.getChildren()));
+            String markdownContent = MarkdownConverter.blocksToMarkdown(fetchBlocks(runContext, renderedPageId));
 
             return buildOutput(pageResponse, markdownContent, "Page read successfully");
 

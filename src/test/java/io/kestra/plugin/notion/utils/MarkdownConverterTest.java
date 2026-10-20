@@ -265,6 +265,51 @@ class MarkdownConverterTest {
     }
 
     @Test
+    void testNestedBlocksToMarkdown() {
+        ObjectNode parent = createSimpleListBlock("bulleted_list_item", "Parent item");
+        ArrayNode nestedItems = mapper.createArrayNode();
+        nestedItems.add(createSimpleListBlock("bulleted_list_item", "Child item"));
+        parent.set("children", nestedItems);
+
+        ObjectNode callout = mapper.createObjectNode();
+        callout.put("type", "callout");
+        ObjectNode calloutData = mapper.createObjectNode();
+        calloutData.set("rich_text", createSimpleRichText("Callout title"));
+        callout.set("callout", calloutData);
+        ArrayNode calloutBody = mapper.createArrayNode();
+        calloutBody.add(createSimpleParagraphBlock("Callout body"));
+        callout.set("children", calloutBody);
+
+        ArrayNode blocks = mapper.createArrayNode();
+        blocks.add(parent);
+        blocks.add(callout);
+
+        String result = MarkdownConverter.blocksToMarkdown(blocks);
+
+        assertThat(result, containsString("- Parent item\n  - Child item"));
+        assertThat(result, containsString("Callout title"));
+        assertThat(result, containsString("Callout body"));
+    }
+
+    @Test
+    void testTableToMarkdown() {
+        ObjectNode table = mapper.createObjectNode();
+        table.put("type", "table");
+        table.set("table", mapper.createObjectNode().put("has_column_header", true));
+        ArrayNode rows = mapper.createArrayNode();
+        rows.add(createTableRow("Squad", "Leads"));
+        rows.add(createTableRow("Core", "Loïc & Marco"));
+        table.set("children", rows);
+
+        ArrayNode blocks = mapper.createArrayNode();
+        blocks.add(table);
+
+        String result = MarkdownConverter.blocksToMarkdown(blocks);
+
+        assertThat(result, equalTo("| Squad | Leads |\n| --- | --- |\n| Core | Loïc & Marco |"));
+    }
+
+    @Test
     void testCodeBlockToMarkdown() {
         ObjectNode block = createSimpleCodeBlock("java", "System.out.println(\"Hello\");");
         ArrayNode blocks = mapper.createArrayNode();
@@ -703,6 +748,17 @@ class MarkdownConverterTest {
         block.set(type, listItem);
 
         return block;
+    }
+
+    private ObjectNode createTableRow(String... values) {
+        ArrayNode cells = mapper.createArrayNode();
+        for (String value : values) {
+            cells.add(createSimpleRichText(value));
+        }
+        ObjectNode row = mapper.createObjectNode();
+        row.put("type", "table_row");
+        row.set("table_row", mapper.createObjectNode().set("cells", cells));
+        return row;
     }
 
     private ObjectNode createSimpleCodeBlock(String language, String content) {

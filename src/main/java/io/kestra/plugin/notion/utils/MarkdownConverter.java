@@ -491,12 +491,26 @@ public class MarkdownConverter {
                     markdown.append("---\n\n");
                     break;
 
+                case "table":
+                    appendTable(markdown, block);
+                    break;
+
                 default:
                     // For unsupported block types, try to extract plain text
                     String plainText = richTextToMarkdown(blockData.path("rich_text"));
                     if (!plainText.isEmpty()) {
                         markdown.append(plainText).append("\n\n");
                     }
+            }
+
+            JsonNode children = block.path("children");
+            if (children.isArray() && !children.isEmpty() && !"table".equals(blockType)) {
+                String nested = blocksToMarkdown(children);
+                if (blockType.endsWith("list_item")) {
+                    markdown.append(nested.indent(2));
+                } else {
+                    markdown.append(nested).append("\n\n");
+                }
             }
         }
 
@@ -505,6 +519,22 @@ public class MarkdownConverter {
 
         logger.debug("Converted to markdown: {} chars", result.length());
         return result;
+    }
+
+    private static void appendTable(StringBuilder markdown, JsonNode table) {
+        boolean firstRow = true;
+        for (JsonNode row : table.path("children")) {
+            List<String> cells = new ArrayList<>();
+            for (JsonNode cell : row.path("table_row").path("cells")) {
+                cells.add(richTextToMarkdown(cell));
+            }
+            markdown.append("| ").append(String.join(" | ", cells)).append(" |\n");
+            if (firstRow) {
+                markdown.append("|").append(" --- |".repeat(cells.size())).append("\n");
+                firstRow = false;
+            }
+        }
+        markdown.append("\n");
     }
 
     /**
