@@ -1,10 +1,12 @@
 package io.kestra.plugin.notion.utils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.commonmark.Extension;
 import org.commonmark.ext.gfm.strikethrough.Strikethrough;
@@ -22,6 +24,7 @@ import org.commonmark.node.Emphasis;
 import org.commonmark.node.FencedCodeBlock;
 import org.commonmark.node.HardLineBreak;
 import org.commonmark.node.Heading;
+import org.commonmark.node.HtmlInline;
 import org.commonmark.node.Image;
 import org.commonmark.node.IndentedCodeBlock;
 import org.commonmark.node.Link;
@@ -347,6 +350,8 @@ public class MarkdownConverter {
                 case Image image -> collectInlines(child, out, ctx); // render alt-text inlines as plain text
                 case SoftLineBreak softBreak -> addText(out, "\n", ctx);
                 case HardLineBreak hardBreak -> addText(out, "\n", ctx);
+                // blocksToMarkdown writes line breaks inside table cells as <br>
+                case HtmlInline html when html.getLiteral().matches("(?i)<br\\s*/?>") -> addText(out, "\n", ctx);
                 case TaskListItemMarker marker -> {
                     /* consumed at the list-item level */ }
                 default -> collectInlines(child, out, ctx); // unknown inline container: descend
@@ -431,11 +436,28 @@ public class MarkdownConverter {
 
         logger.debug("Converting {} Notion blocks to markdown", blocks.size());
 
+        // Clean up extra newlines at the end
+        String result = renderBlocks(blocks).replaceAll("\\n\\n+$", "\n").trim();
+
+        logger.debug("Converted to markdown: {} chars", result.length());
+        return result;
+    }
+
+    private static String renderBlocks(JsonNode blocks) {
         StringBuilder markdown = new StringBuilder();
+        boolean previousIsListItem = false;
 
         for (JsonNode block : blocks) {
             String blockType = block.path("type").asText();
             JsonNode blockData = block.path(blockType);
+
+            // List items end with a single newline, so a following non-list block needs a blank line or
+            // Markdown parsers read it as a lazy continuation of the last item.
+            boolean isListItem = listContentIndent(blockType) > 0;
+            if (previousIsListItem && !isListItem) {
+                markdown.append("\n");
+            }
+            previousIsListItem = isListItem;
 
             switch (blockType) {
                 case "paragraph":
@@ -468,6 +490,12 @@ public class MarkdownConverter {
                     markdown.append("\n");
                     break;
 
+                case "to_do":
+                    markdown.append(blockData.path("checked").asBoolean(false) ? "- [x] " : "- [ ] ")
+                        .append(richTextToMarkdown(blockData.path("rich_text")));
+                    markdown.append("\n");
+                    break;
+
                 case "code":
                     String language = blockData.path("language").asText("");
                     String caption = richTextToMarkdown(blockData.path("caption"));
@@ -491,6 +519,10 @@ public class MarkdownConverter {
                     markdown.append("---\n\n");
                     break;
 
+                case "table":
+                    appendTable(markdown, block);
+                    break;
+
                 default:
                     // For unsupported block types, try to extract plain text
                     String plainText = richTextToMarkdown(blockData.path("rich_text"));
@@ -498,13 +530,89 @@ public class MarkdownConverter {
                         markdown.append(plainText).append("\n\n");
                     }
             }
+
+            JsonNode children = block.path("children");
+            if (children.isArray() && !children.isEmpty() && !"table".equals(blockType)) {
+                String nested = renderBlocks(children).replaceAll("\\n+$", "");
+                int listIndent = listContentIndent(blockType);
+                if (listIndent > 0) {
+                    markdown.append(indent(nested, listIndent)).append("\n");
+                } else {
+                    markdown.append(nested).append("\n\n");
+                }
+            }
         }
 
-        // Clean up extra newlines at the end
-        String result = markdown.toString().replaceAll("\\n\\n+$", "\n").trim();
+        return markdown.toString();
+    }
 
-        logger.debug("Converted to markdown: {} chars", result.length());
-        return result;
+    /**
+     * Width of the list marker emitted for a list-like block, i.e. how far its nested content must be
+     * indented to stay inside the item in CommonMark; 0 for blocks that are not list items.
+     */
+    private static int listContentIndent(String blockType) {
+        return switch (blockType) {
+            case "bulleted_list_item", "to_do" -> 2;
+            case "numbered_list_item" -> 3;
+            default -> 0;
+        };
+    }
+
+    /**
+     * Indents every non-blank line by {@code width} spaces; blank lines stay empty.
+     */
+    private static String indent(String text, int width) {
+        String padding = " ".repeat(width);
+        return text.lines()
+            .map(line -> line.isBlank() ? "" : padding + line)
+            .collect(Collectors.joining("\n"));
+    }
+
+    private static void appendTable(StringBuilder markdown, JsonNode table) {
+        JsonNode rows = table.path("children");
+        if (!rows.isArray() || rows.isEmpty()) {
+            return;
+        }
+
+        int width = table.path("table").path("table_width").asInt(rows.get(0).path("table_row").path("cells").size());
+        boolean hasColumnHeader = table.path("table").path("has_column_header").asBoolean(false);
+
+        // A Markdown table always has a header row: without a Notion column header, use an empty one so
+        // the first data row isn't promoted to column names.
+        if (!hasColumnHeader) {
+            appendTableRow(markdown, Collections.nCopies(width, ""));
+            appendTableSeparator(markdown, width);
+        }
+
+        boolean firstRow = true;
+        for (JsonNode row : rows) {
+            List<String> cells = new ArrayList<>();
+            for (JsonNode cell : row.path("table_row").path("cells")) {
+                cells.add(escapeTableCell(richTextToMarkdown(cell)));
+            }
+            appendTableRow(markdown, cells);
+            if (firstRow && hasColumnHeader) {
+                appendTableSeparator(markdown, width);
+            }
+            firstRow = false;
+        }
+        markdown.append("\n");
+    }
+
+    private static void appendTableRow(StringBuilder markdown, List<String> cells) {
+        markdown.append("| ").append(String.join(" | ", cells)).append(" |\n");
+    }
+
+    private static void appendTableSeparator(StringBuilder markdown, int width) {
+        markdown.append("|").append(" --- |".repeat(width)).append("\n");
+    }
+
+    /**
+     * Escapes characters that would otherwise break a Markdown table row: pipes start a new cell and
+     * line breaks end the row.
+     */
+    private static String escapeTableCell(String text) {
+        return text.replace("|", "\\|").replaceAll("\\r?\\n", "<br>");
     }
 
     /**

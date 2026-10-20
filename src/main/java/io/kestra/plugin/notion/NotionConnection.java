@@ -5,16 +5,22 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import io.kestra.core.exceptions.IllegalVariableEvaluationException;
 import io.kestra.core.http.HttpRequest;
 import io.kestra.core.http.HttpResponse;
 import io.kestra.core.http.client.HttpClient;
+import io.kestra.core.http.client.HttpClientResponseException;
 import io.kestra.core.http.client.configurations.HttpConfiguration;
 import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.property.Property;
@@ -62,6 +68,14 @@ public abstract class NotionConnection extends Task {
     /** Notion caps a single create/append request at 100 child blocks. */
     public static final int MAX_BLOCKS_PER_REQUEST = 100;
 
+    /** Notion caps a single page of a paginated list endpoint at 100 results. */
+    public static final int MAX_PAGE_SIZE = 100;
+
+    /** Extra attempts made on HTTP 429 when walking a page's blocks, which can issue many requests. */
+    private static final int MAX_RATE_LIMIT_RETRIES = 5;
+
+    private static final Duration DEFAULT_RATE_LIMIT_BACKOFF = Duration.ofSeconds(1);
+
     @Schema(
         title = "Notion API token",
         description = "The Notion API integration token (Internal Secret connection)"
@@ -79,14 +93,20 @@ public abstract class NotionConnection extends Task {
         var logger = runContext.logger();
 
         try (HttpClient client = new HttpClient(runContext, options)) {
-            HttpRequest request = requestBuilder.build();
-            HttpResponse<T> response = client.request(request, responseType);
-
-            return response.getBody();
+            return makeCall(client, requestBuilder, responseType);
         } catch (Exception e) {
             logger.error("Error making request to Notion API: {}", e.getMessage());
             throw e;
         }
+    }
+
+    /**
+     * Makes an HTTP call to the Notion API on an already opened client, so that a sequence of calls
+     * can share its connection pool.
+     */
+    protected <T> T makeCall(HttpClient client, HttpRequest.HttpRequestBuilder requestBuilder, Class<T> responseType) throws Exception {
+        HttpResponse<T> response = client.request(requestBuilder.build(), responseType);
+        return response.getBody();
     }
 
     /**
@@ -230,6 +250,94 @@ public abstract class NotionConnection extends Task {
             }
         }
         return batch;
+    }
+
+    /**
+     * Fetches every block of a page or block, following pagination and recursing into blocks that
+     * have children (except child pages and databases, which are separate pages). Each block's
+     * children are set under a {@code children} field.
+     */
+    protected ArrayNode fetchBlocks(RunContext runContext, String blockId) throws Exception {
+        try (HttpClient client = new HttpClient(runContext, options)) {
+            return fetchBlocks(runContext, client, blockId);
+        }
+    }
+
+    private ArrayNode fetchBlocks(RunContext runContext, HttpClient client, String blockId) throws Exception {
+        var blocks = mapper.createArrayNode();
+        String cursor = null;
+        do {
+            var url = buildPageChildrenURL(blockId) + "?page_size=" + MAX_PAGE_SIZE
+                + (cursor != null ? "&start_cursor=" + URLEncoder.encode(cursor, StandardCharsets.UTF_8) : "");
+            var response = callWithRateLimitRetry(runContext, client, url);
+            if (response.getChildren() != null) {
+                for (var child : response.getChildren()) {
+                    ObjectNode block = mapper.valueToTree(child);
+                    var type = block.path("type").asText();
+                    if (block.path("has_children").asBoolean(false) && !"child_page".equals(type) && !"child_database".equals(type)) {
+                        fetchNestedBlocks(runContext, client, block);
+                    }
+                    blocks.add(block);
+                }
+            }
+            cursor = Boolean.TRUE.equals(response.getHasMore()) ? response.getNextCursor() : null;
+        } while (cursor != null);
+        return blocks;
+    }
+
+    /**
+     * Sets a block's children, skipping them when Notion refuses to return them (e.g. a synced block
+     * whose original isn't shared with the integration) so that the rest of the page is still read.
+     */
+    private void fetchNestedBlocks(RunContext runContext, HttpClient client, ObjectNode block) throws Exception {
+        var id = block.path("id").asText();
+        try {
+            block.set("children", fetchBlocks(runContext, client, id));
+        } catch (HttpClientResponseException e) {
+            var status = statusCode(e);
+            if (status < 400 || status >= 500 || status == 429) {
+                throw e;
+            }
+            runContext.logger().warn(
+                "Skipping children of {} block '{}': Notion API returned HTTP {}: {}",
+                block.path("type").asText(), id, status, e.getMessage()
+            );
+        }
+    }
+
+    private NotionResponse callWithRateLimitRetry(RunContext runContext, HttpClient client, String url) throws Exception {
+        for (var attempt = 0;; attempt++) {
+            try {
+                return makeCall(client, buildGetRequest(runContext, url), NotionResponse.class);
+            } catch (HttpClientResponseException e) {
+                if (statusCode(e) != 429 || attempt >= MAX_RATE_LIMIT_RETRIES) {
+                    throw e;
+                }
+                var backoff = retryAfter(e);
+                runContext.logger().debug("Rate limited by Notion API, retrying in {} ms", backoff.toMillis());
+                Thread.sleep(backoff.toMillis());
+            }
+        }
+    }
+
+    private static int statusCode(HttpClientResponseException e) {
+        return e.getResponse() != null && e.getResponse().getStatus() != null ? e.getResponse().getStatus().getCode() : -1;
+    }
+
+    private static Duration retryAfter(HttpClientResponseException e) {
+        if (e.getResponse() == null || e.getResponse().getHeaders() == null) {
+            return DEFAULT_RATE_LIMIT_BACKOFF;
+        }
+        return e.getResponse().getHeaders().firstValue("Retry-After")
+            .flatMap(value ->
+            {
+                try {
+                    return Optional.of(Duration.ofSeconds(Long.parseLong(value.trim())));
+                } catch (NumberFormatException ignored) {
+                    return Optional.empty();
+                }
+            })
+            .orElse(DEFAULT_RATE_LIMIT_BACKOFF);
     }
 
     /**

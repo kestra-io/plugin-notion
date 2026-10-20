@@ -31,6 +31,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.patch;
 import static com.github.tomakehurst.wiremock.client.WireMock.patchRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -249,7 +250,7 @@ class UpdateTest {
             combinedBlocks.addAll(appendedBlocks);
 
             wireMockServer.stubFor(
-                get(urlEqualTo("/v1/blocks/" + pageId + "/children"))
+                get(urlPathEqualTo("/v1/blocks/" + pageId + "/children"))
                     .inScenario("page-content")
                     .whenScenarioStateIs(STARTED)
                     .willReturn(
@@ -274,7 +275,7 @@ class UpdateTest {
             );
 
             wireMockServer.stubFor(
-                get(urlEqualTo("/v1/blocks/" + pageId + "/children"))
+                get(urlPathEqualTo("/v1/blocks/" + pageId + "/children"))
                     .inScenario("page-content")
                     .whenScenarioStateIs("appended")
                     .willReturn(
