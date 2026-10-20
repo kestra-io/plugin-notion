@@ -310,6 +310,99 @@ class MarkdownConverterTest {
     }
 
     @Test
+    void testNestedNumberedListStaysInsideItem() {
+        ObjectNode parent = createSimpleListBlock("numbered_list_item", "Step");
+        parent.set("children", mapper.createArrayNode().add(createSimpleListBlock("bulleted_list_item", "detail")));
+
+        String result = MarkdownConverter.blocksToMarkdown(mapper.createArrayNode().add(parent));
+
+        assertThat(result, equalTo("1. Step\n   - detail"));
+        ArrayNode reparsed = MarkdownConverter.markdownToBlocks(result);
+        assertThat(reparsed.size(), equalTo(1));
+        assertThat(reparsed.get(0).path("numbered_list_item").path("children").get(0).path("type").asText(), equalTo("bulleted_list_item"));
+    }
+
+    @Test
+    void testNestedToDoToMarkdown() {
+        ObjectNode task = createToDoBlock("Task", false);
+        task.set("children", mapper.createArrayNode().add(createToDoBlock("Sub-task", true)));
+
+        String result = MarkdownConverter.blocksToMarkdown(mapper.createArrayNode().add(task).add(createToDoBlock("Other", false)));
+
+        assertThat(result, equalTo("- [ ] Task\n  - [x] Sub-task\n- [ ] Other"));
+    }
+
+    @Test
+    void testNestedChildrenIndentSkipsBlankLinesAndKeepsLeadingWhitespace() {
+        ObjectNode parent = createSimpleListBlock("bulleted_list_item", "Parent");
+        parent.set(
+            "children", mapper.createArrayNode()
+                .add(createSimpleParagraphBlock("  indented"))
+                .add(createSimpleParagraphBlock("second"))
+        );
+
+        String result = MarkdownConverter.blocksToMarkdown(mapper.createArrayNode().add(parent));
+
+        assertThat(result, equalTo("- Parent\n    indented\n\n  second"));
+    }
+
+    @Test
+    void testBlockAfterListIsNotPartOfLastItem() {
+        ObjectNode table = mapper.createObjectNode();
+        table.put("type", "table");
+        table.set("table", mapper.createObjectNode().put("has_column_header", true));
+        table.set("children", mapper.createArrayNode().add(createTableRow("Name")).add(createTableRow("A | B")));
+
+        ArrayNode blocks = mapper.createArrayNode()
+            .add(createSimpleListBlock("bulleted_list_item", "Item"))
+            .add(createSimpleParagraphBlock("After list"))
+            .add(createSimpleListBlock("numbered_list_item", "Step"))
+            .add(table);
+
+        String result = MarkdownConverter.blocksToMarkdown(blocks);
+
+        assertThat(result, equalTo("- Item\n\nAfter list\n\n1. Step\n\n| Name |\n| --- |\n| A \\| B |"));
+        assertThat(blockTypes(MarkdownConverter.markdownToBlocks(result)), contains("bulleted_list_item", "paragraph", "numbered_list_item", "table"));
+    }
+
+    @Test
+    void testTableCellsAreEscaped() {
+        ObjectNode table = mapper.createObjectNode();
+        table.put("type", "table");
+        table.set("table", mapper.createObjectNode().put("has_column_header", true));
+        table.set(
+            "children", mapper.createArrayNode()
+                .add(createTableRow("Name", "Notes"))
+                .add(createTableRow("A | B", "line 1\nline 2"))
+        );
+
+        String result = MarkdownConverter.blocksToMarkdown(mapper.createArrayNode().add(table));
+
+        assertThat(result, equalTo("| Name | Notes |\n| --- | --- |\n| A \\| B | line 1<br>line 2 |"));
+        JsonNode reparsed = MarkdownConverter.markdownToBlocks(result).get(0);
+        assertThat(reparsed.path("table").path("table_width").asInt(), equalTo(2));
+        JsonNode cells = reparsed.path("table").path("children").get(1).path("table_row").path("cells");
+        assertThat(concatRichText(cells.get(0)), equalTo("A | B"));
+        assertThat(concatRichText(cells.get(1)), equalTo("line 1\nline 2"));
+    }
+
+    @Test
+    void testTableWithoutColumnHeaderKeepsFirstRowAsData() {
+        ObjectNode table = mapper.createObjectNode();
+        table.put("type", "table");
+        table.set("table", mapper.createObjectNode().put("table_width", 2).put("has_column_header", false));
+        table.set(
+            "children", mapper.createArrayNode()
+                .add(createTableRow("Core", "Loïc"))
+                .add(createTableRow("Plugins", "Jérémy"))
+        );
+
+        String result = MarkdownConverter.blocksToMarkdown(mapper.createArrayNode().add(table));
+
+        assertThat(result, equalTo("|  |  |\n| --- | --- |\n| Core | Loïc |\n| Plugins | Jérémy |"));
+    }
+
+    @Test
     void testCodeBlockToMarkdown() {
         ObjectNode block = createSimpleCodeBlock("java", "System.out.println(\"Hello\");");
         ArrayNode blocks = mapper.createArrayNode();
@@ -747,6 +840,12 @@ class MarkdownConverterTest {
         listItem.set("rich_text", createSimpleRichText(text));
         block.set(type, listItem);
 
+        return block;
+    }
+
+    private ObjectNode createToDoBlock(String text, boolean checked) {
+        ObjectNode block = createSimpleListBlock("to_do", text);
+        ((ObjectNode) block.path("to_do")).put("checked", checked);
         return block;
     }
 
