@@ -227,6 +227,58 @@ class ReadTest {
     }
 
     @Test
+    void testReadExtractsTitleFromRenamedDatabaseColumn() throws Exception {
+        String pageId = "12345678-1234-1234-1234-123456789abc";
+        WireMockServer wireMockServer = new WireMockServer(WireMockConfiguration.options().dynamicPort());
+        wireMockServer.start();
+
+        String previousBaseUrl = System.getProperty("notion.api.base.url");
+        System.setProperty("notion.api.base.url", wireMockServer.baseUrl());
+
+        try {
+            wireMockServer.stubFor(
+                get(urlEqualTo("/v1/pages/" + pageId)).willReturn(
+                    json(
+                        Map.of(
+                            "object", "page",
+                            "id", pageId,
+                            "url", "https://www.notion.so/" + pageId,
+                            "properties", Map.of(
+                                "Task", Map.of(
+                                    "id", "title",
+                                    "type", "title",
+                                    "title", List.of(Map.of("plain_text", "Ship it"))
+                                )
+                            )
+                        )
+                    )
+                )
+            );
+            wireMockServer.stubFor(
+                get(urlPathEqualTo("/v1/blocks/" + pageId + "/children")).willReturn(
+                    json(Map.of("results", List.of(), "has_more", false))
+                )
+            );
+
+            Read task = Read.builder()
+                .apiToken(Property.ofValue("test-token"))
+                .pageId(Property.ofValue(pageId))
+                .build();
+
+            AbstractTask.Output output = task.run(runContextFactory.of(Map.of()));
+
+            assertThat(output.getTitle(), equalTo("Ship it"));
+        } finally {
+            wireMockServer.stop();
+            if (previousBaseUrl == null) {
+                System.clearProperty("notion.api.base.url");
+            } else {
+                System.setProperty("notion.api.base.url", previousBaseUrl);
+            }
+        }
+    }
+
+    @Test
     void testReadRetriesOnRateLimitAndSkipsInaccessibleChildren() throws Exception {
         String pageId = "12345678-1234-1234-1234-123456789abc";
         WireMockServer wireMockServer = new WireMockServer(WireMockConfiguration.options().dynamicPort());

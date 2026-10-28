@@ -117,25 +117,39 @@ public abstract class AbstractTask extends NotionConnection implements RunnableT
     /**
      * Helper method to extract page title from Notion page properties
      */
-    protected String extractPageTitle(Map<String, Object> properties) {
+    protected static String extractPageTitle(Map<?, ?> properties) {
         if (properties == null) {
             return null;
         }
 
-        // Notion stores title in different formats, try common patterns
-        Map<String, Object> titleProp = (Map<String, Object>) properties.get("title");
-        if (titleProp == null) {
-            titleProp = (Map<String, Object>) properties.get("Name");
+        Map<?, ?> fallbackTitleProperty = null;
+        for (Object property : properties.values()) {
+            if (!(property instanceof Map<?, ?> propertyMap)) {
+                continue;
+            }
+
+            if ("title".equals(propertyMap.get("type")) || "title".equals(propertyMap.get("id"))) {
+                return extractTitleText(propertyMap);
+            }
+
+            // Keep compatibility with partial API fixtures that omit the property metadata.
+            if (fallbackTitleProperty == null && propertyMap.get("title") instanceof List<?>) {
+                fallbackTitleProperty = propertyMap;
+            }
         }
 
-        if (titleProp != null && titleProp.get("title") instanceof List) {
-            List<?> titleArray = (List<?>) titleProp.get("title");
-            if (!titleArray.isEmpty() && titleArray.getFirst() instanceof Map) {
-                Map<String, Object> firstTitle = (Map<String, Object>) titleArray.getFirst();
-                Object plainText = firstTitle.get("plain_text");
-                if (plainText != null) {
-                    return plainText.toString();
-                }
+        return extractTitleText(fallbackTitleProperty);
+    }
+
+    private static String extractTitleText(Map<?, ?> titleProperty) {
+        if (titleProperty == null || !(titleProperty.get("title") instanceof List<?> titleArray)) {
+            return null;
+        }
+
+        if (!titleArray.isEmpty() && titleArray.getFirst() instanceof Map<?, ?> firstTitle) {
+            Object plainText = firstTitle.get("plain_text");
+            if (plainText != null) {
+                return plainText.toString();
             }
         }
 
