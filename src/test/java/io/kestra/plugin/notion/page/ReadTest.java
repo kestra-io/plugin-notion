@@ -163,7 +163,12 @@ class ReadTest {
                             "object", "page",
                             "id", pageId,
                             "url", "https://www.notion.so/" + pageId,
-                            "properties", Map.of("title", Map.of("title", List.of(Map.of("plain_text", "Squads"))))
+                            "properties", Map.of(
+                                "title", Map.of(
+                                    "type", "title",
+                                    "title", List.of(Map.of("plain_text", "Squads"))
+                                )
+                            )
                         )
                     )
                 )
@@ -228,26 +233,29 @@ class ReadTest {
 
     @Test
     void testReadExtractsTitleFromRenamedDatabaseColumn() throws Exception {
-        String pageId = "12345678-1234-1234-1234-123456789abc";
-        WireMockServer wireMockServer = new WireMockServer(WireMockConfiguration.options().dynamicPort());
+        var pageId = "12345678-1234-1234-1234-123456789abc";
+        var wireMockServer = new WireMockServer(WireMockConfiguration.options().dynamicPort());
         wireMockServer.start();
 
-        String previousBaseUrl = System.getProperty("notion.api.base.url");
+        var previousBaseUrl = System.getProperty("notion.api.base.url");
         System.setProperty("notion.api.base.url", wireMockServer.baseUrl());
 
         try {
             wireMockServer.stubFor(
-                get(urlEqualTo("/v1/pages/" + pageId)).willReturn(
+                get(urlEqualTo("/v1/pages/%s".formatted(pageId))).willReturn(
                     json(
                         Map.of(
                             "object", "page",
                             "id", pageId,
-                            "url", "https://www.notion.so/" + pageId,
+                            "url", "https://www.notion.so/%s".formatted(pageId),
                             "properties", Map.of(
                                 "Task", Map.of(
                                     "id", "title",
                                     "type", "title",
-                                    "title", List.of(Map.of("plain_text", "Ship it"))
+                                    "title", List.of(
+                                        Map.of("plain_text", "Ship "),
+                                        Map.of("plain_text", "it")
+                                    )
                                 )
                             )
                         )
@@ -255,17 +263,17 @@ class ReadTest {
                 )
             );
             wireMockServer.stubFor(
-                get(urlPathEqualTo("/v1/blocks/" + pageId + "/children")).willReturn(
+                get(urlPathEqualTo("/v1/blocks/%s/children".formatted(pageId))).willReturn(
                     json(Map.of("results", List.of(), "has_more", false))
                 )
             );
 
-            Read task = Read.builder()
+            var task = Read.builder()
                 .apiToken(Property.ofValue("test-token"))
                 .pageId(Property.ofValue(pageId))
                 .build();
 
-            AbstractTask.Output output = task.run(runContextFactory.of(Map.of()));
+            var output = task.run(runContextFactory.of(Map.of()));
 
             assertThat(output.getTitle(), equalTo("Ship it"));
         } finally {
@@ -295,7 +303,12 @@ class ReadTest {
                             "object", "page",
                             "id", pageId,
                             "url", "https://www.notion.so/" + pageId,
-                            "properties", Map.of("title", Map.of("title", List.of(Map.of("plain_text", "Squads"))))
+                            "properties", Map.of(
+                                "title", Map.of(
+                                    "type", "title",
+                                    "title", List.of(Map.of("plain_text", "Squads"))
+                                )
+                            )
                         )
                     )
                 )

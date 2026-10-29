@@ -122,23 +122,17 @@ public abstract class AbstractTask extends NotionConnection implements RunnableT
             return null;
         }
 
-        Map<?, ?> fallbackTitleProperty = null;
-        for (Object property : properties.values()) {
+        for (var property : properties.values()) {
             if (!(property instanceof Map<?, ?> propertyMap)) {
                 continue;
             }
 
-            if ("title".equals(propertyMap.get("type")) || "title".equals(propertyMap.get("id"))) {
+            if ("title".equals(propertyMap.get("type"))) {
                 return extractTitleText(propertyMap);
-            }
-
-            // Keep compatibility with partial API fixtures that omit the property metadata.
-            if (fallbackTitleProperty == null && propertyMap.get("title") instanceof List<?>) {
-                fallbackTitleProperty = propertyMap;
             }
         }
 
-        return extractTitleText(fallbackTitleProperty);
+        return null;
     }
 
     private static String extractTitleText(Map<?, ?> titleProperty) {
@@ -146,14 +140,19 @@ public abstract class AbstractTask extends NotionConnection implements RunnableT
             return null;
         }
 
-        if (!titleArray.isEmpty() && titleArray.getFirst() instanceof Map<?, ?> firstTitle) {
-            Object plainText = firstTitle.get("plain_text");
-            if (plainText != null) {
-                return plainText.toString();
+        var title = new StringBuilder();
+        var hasPlainText = false;
+        for (var titlePart : titleArray) {
+            if (titlePart instanceof Map<?, ?> titlePartMap) {
+                var plainText = titlePartMap.get("plain_text");
+                if (plainText != null) {
+                    hasPlainText = true;
+                    title.append(plainText);
+                }
             }
         }
 
-        return null;
+        return hasPlainText ? title.toString() : null;
     }
 
     /**

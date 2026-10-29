@@ -561,6 +561,7 @@ class UpdateTriggerTest {
             "last_edited_time", lastEditedTime,
             "properties", Map.of(
                 "title", Map.of(
+                    "type", "title",
                     "title", List.of(Map.of("plain_text", title))
                 )
             )
@@ -578,6 +579,7 @@ class UpdateTriggerTest {
             "parent", Map.of("type", "page_id", "page_id", parentPageId),
             "properties", Map.of(
                 "title", Map.of(
+                    "type", "title",
                     "title", List.of(Map.of("plain_text", title))
                 )
             )
