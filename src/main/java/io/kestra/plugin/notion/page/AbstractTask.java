@@ -136,23 +136,21 @@ public abstract class AbstractTask extends NotionConnection implements RunnableT
     }
 
     private static String extractTitleText(Map<?, ?> titleProperty) {
-        if (titleProperty == null || !(titleProperty.get("title") instanceof List<?> titleArray)) {
+        if (!(titleProperty.get("title") instanceof List<?> titleArray)) {
             return null;
         }
 
         var title = new StringBuilder();
-        var hasPlainText = false;
         for (var titlePart : titleArray) {
             if (titlePart instanceof Map<?, ?> titlePartMap) {
                 var plainText = titlePartMap.get("plain_text");
                 if (plainText != null) {
-                    hasPlainText = true;
                     title.append(plainText);
                 }
             }
         }
 
-        return hasPlainText ? title.toString() : null;
+        return title.isEmpty() ? null : title.toString();
     }
 
     /**

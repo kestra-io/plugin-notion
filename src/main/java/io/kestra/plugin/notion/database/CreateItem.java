@@ -121,7 +121,7 @@ public class CreateItem extends AbstractDatabaseTask implements RunnableTask<Cre
                 )
         );
 
-        // Address the title property by its stable ID; its display name can be renamed or localized.
+        // Address the title property by its stable ID, its display name can be renamed or localized.
         rProperties.put(
             "title", Map.of(
                 "title", List.of(
