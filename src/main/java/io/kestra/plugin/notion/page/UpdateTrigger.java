@@ -294,31 +294,12 @@ public class UpdateTrigger extends AbstractTrigger implements PollingTriggerInte
             .build();
     }
 
-    @SuppressWarnings("unchecked")
     private String extractTitle(Map<String, Object> page) {
         var properties = page.get("properties");
         if (!(properties instanceof Map<?, ?> propsMap)) {
             return null;
         }
-        // Try "title" then "Name" — Notion uses "title" for pages, "Name" for database items.
-        for (var key : new String[]{"title", "Name"}) {
-            var prop = propsMap.get(key);
-            if (!(prop instanceof Map<?, ?> propMap)) {
-                continue;
-            }
-            var titleArray = propMap.get("title");
-            if (!(titleArray instanceof List<?> list) || list.isEmpty()) {
-                continue;
-            }
-            var first = list.getFirst();
-            if (first instanceof Map<?, ?> entry) {
-                var plainText = entry.get("plain_text");
-                if (plainText != null) {
-                    return plainText.toString();
-                }
-            }
-        }
-        return null;
+        return AbstractTask.extractPageTitle(propsMap);
     }
 
     @Builder

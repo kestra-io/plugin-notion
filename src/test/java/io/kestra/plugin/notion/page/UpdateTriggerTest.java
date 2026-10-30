@@ -151,6 +151,64 @@ class UpdateTriggerTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void renamedDatabaseTitleColumn_isIncludedInTriggerOutput() throws Exception {
+        var trigger = UpdateTrigger.builder()
+            .id("renamed-title")
+            .type(UpdateTrigger.class.getName())
+            .apiToken(Property.ofValue("test-token"))
+            .build();
+
+        var entry = TestsUtils.mockTrigger(runContextFactory, trigger);
+        var conditionContext = entry.getKey();
+
+        var wireMock = new WireMockServer(WireMockConfiguration.options().dynamicPort());
+        wireMock.start();
+        var previousUrl = System.getProperty("notion.api.base.url");
+        System.setProperty("notion.api.base.url", wireMock.baseUrl());
+
+        try {
+            configureFor("localhost", wireMock.port());
+
+            var page = Map.of(
+                "object", "page",
+                "id", "page-1",
+                "url", "https://notion.so/page-1",
+                "last_edited_time", Instant.now().toString(),
+                "properties", Map.of(
+                    "Task", Map.of(
+                        "id", "title",
+                        "type", "title",
+                        "title", List.of(Map.of("plain_text", "Ship it"))
+                    )
+                )
+            );
+            var responseBody = Map.of(
+                "object", "list",
+                "results", List.of(page),
+                "has_more", false
+            );
+
+            wireMock.stubFor(
+                post(urlEqualTo("/v1/search"))
+                    .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(MAPPER.writeValueAsString(responseBody))
+                        .withStatus(200))
+            );
+
+            var result = trigger.evaluate(conditionContext, triggerContext(ZonedDateTime.now().minusMinutes(10)));
+
+            assertThat(result.isPresent(), is(true));
+            var updatedPages = (List<Map<String, Object>>) result.get().getTrigger().getVariables().get("updatedPages");
+            assertThat(updatedPages.getFirst().get("title"), equalTo("Ship it"));
+        } finally {
+            wireMock.stop();
+            restoreBaseUrl(previousUrl);
+        }
+    }
+
+    @Test
     void notionMinutePrecision_pageInSameMinuteAsWatermark_isDetected() throws Exception {
         // Notion truncates last_edited_time to minutes (seconds/ms always 0).
         // The previous evaluation timestamp has sub-second precision. If we compare
@@ -503,6 +561,7 @@ class UpdateTriggerTest {
             "last_edited_time", lastEditedTime,
             "properties", Map.of(
                 "title", Map.of(
+                    "type", "title",
                     "title", List.of(Map.of("plain_text", title))
                 )
             )
@@ -520,6 +579,7 @@ class UpdateTriggerTest {
             "parent", Map.of("type", "page_id", "page_id", parentPageId),
             "properties", Map.of(
                 "title", Map.of(
+                    "type", "title",
                     "title", List.of(Map.of("plain_text", title))
                 )
             )

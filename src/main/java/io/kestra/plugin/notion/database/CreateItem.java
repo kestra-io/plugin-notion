@@ -121,9 +121,9 @@ public class CreateItem extends AbstractDatabaseTask implements RunnableTask<Cre
                 )
         );
 
-        // Set title property (Notion databases use a "title" typed property, usually named "Name")
+        // Address the title property by its stable ID, its display name can be renamed or localized.
         rProperties.put(
-            "Name", Map.of(
+            "title", Map.of(
                 "title", List.of(
                     Map.of(
                         "type", "text",

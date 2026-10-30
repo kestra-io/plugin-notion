@@ -117,29 +117,40 @@ public abstract class AbstractTask extends NotionConnection implements RunnableT
     /**
      * Helper method to extract page title from Notion page properties
      */
-    protected String extractPageTitle(Map<String, Object> properties) {
+    protected static String extractPageTitle(Map<?, ?> properties) {
         if (properties == null) {
             return null;
         }
 
-        // Notion stores title in different formats, try common patterns
-        Map<String, Object> titleProp = (Map<String, Object>) properties.get("title");
-        if (titleProp == null) {
-            titleProp = (Map<String, Object>) properties.get("Name");
-        }
+        for (var property : properties.values()) {
+            if (!(property instanceof Map<?, ?> propertyMap)) {
+                continue;
+            }
 
-        if (titleProp != null && titleProp.get("title") instanceof List) {
-            List<?> titleArray = (List<?>) titleProp.get("title");
-            if (!titleArray.isEmpty() && titleArray.getFirst() instanceof Map) {
-                Map<String, Object> firstTitle = (Map<String, Object>) titleArray.getFirst();
-                Object plainText = firstTitle.get("plain_text");
-                if (plainText != null) {
-                    return plainText.toString();
-                }
+            if ("title".equals(propertyMap.get("type"))) {
+                return extractTitleText(propertyMap);
             }
         }
 
         return null;
+    }
+
+    private static String extractTitleText(Map<?, ?> titleProperty) {
+        if (!(titleProperty.get("title") instanceof List<?> titleArray)) {
+            return null;
+        }
+
+        var title = new StringBuilder();
+        for (var titlePart : titleArray) {
+            if (titlePart instanceof Map<?, ?> titlePartMap) {
+                var plainText = titlePartMap.get("plain_text");
+                if (plainText != null) {
+                    title.append(plainText);
+                }
+            }
+        }
+
+        return title.isEmpty() ? null : title.toString();
     }
 
     /**

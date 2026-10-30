@@ -108,6 +108,31 @@ class CreateItemTest {
     }
 
     @Test
+    void createItem_usesStableTitlePropertyId() throws Exception {
+        stubCreatePage(PAGE_ID, false);
+
+        var runContext = runContextFactory.of(Map.of());
+
+        CreateItem.builder()
+            .apiToken(Property.ofValue("test-token"))
+            .databaseId(Property.ofValue(DATABASE_ID))
+            .title(Property.ofValue("Ship it"))
+            .build()
+            .run(runContext);
+
+        var requests = wireMockServer.findAll(postRequestedFor(urlEqualTo("/v1/pages")));
+        assertThat(requests.size(), equalTo(1));
+
+        var properties = mapper.readTree(requests.getFirst().getBodyAsString()).path("properties");
+        assertThat(properties.has("title"), equalTo(true));
+        assertThat(properties.has("Name"), equalTo(false));
+        assertThat(
+            properties.path("title").path("title").get(0).path("text").path("content").asText(),
+            equalTo("Ship it")
+        );
+    }
+
+    @Test
     void createItem_withContent_sendsChildrenBlocks() throws Exception {
         stubCreatePage(PAGE_ID, false);
 

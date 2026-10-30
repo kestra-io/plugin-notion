@@ -434,6 +434,7 @@ class UpdateTest {
         Map<String, Object> titleProperty = new HashMap<>();
         List<Map<String, Object>> titleValues = new ArrayList<>();
         titleValues.add(Map.of("plain_text", title));
+        titleProperty.put("type", "title");
         titleProperty.put("title", titleValues);
 
         response.put("properties", Map.of("title", titleProperty));
